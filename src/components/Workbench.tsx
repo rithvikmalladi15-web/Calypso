@@ -193,12 +193,11 @@ export function Workbench({lab = false}: {lab?: boolean}) {
     <section ref={chart} id="co2-timeline" className="panel timeline">
       <div className="panel-title"><Activity size={16}/> CO₂ timeline <span className="micro end">MODEL OUTPUT · PPM</span></div>
       <div className="panel-pad">
-        <div className="legend"><span className="cyan">● Cabin</span>{!hidden && <span>● Breathing zone</span>}<span>Elapsed model time (s)</span></div>
-        <div className="actions">
+        <details className="chart-tools"><summary>Compare &amp; export</summary><div className="actions">
           <button onClick={()=>void exportPng('cabin')}>Export cabin PNG</button>
           {!hidden && <label className="check"><input type="checkbox" checked={compare} onChange={event=>setCompare(event.target.checked)}/> Compare against baseline</label>}
           <button onClick={exportCsv}>Export CSV</button><button onClick={()=>void exportPng('chart')}>Export chart PNG</button>
-        </div>
+        </div></details>
         {!hidden && <div className="stats">
           <div>Cabin CO₂ <b>{fmt(point.cabin)} ppm</b>{delta(point.cabin,reference.cabin)} vs baseline</div>
           <div>Breathing zone <b>{fmt(point.local)} ppm</b>{delta(point.local,reference.local)} vs baseline</div>
@@ -216,7 +215,7 @@ export function Workbench({lab = false}: {lab?: boolean}) {
         <CabinDiagram point={point} sensors={s.sensors} airflow={false} heat={heat} coverage={coverage} hidden={masked} playing={s.running} ventilation={s.settings.ventilation} onMove={lab && !hidden ? move : undefined}/>
         {solver.pending && <div className="solve-placeholder" role="status">Computing the run…</div>}
 
-        <p className="schematic-disclosure">Conceptual schematic, not a spatial simulation. AI-assisted cartoon illustration.</p>
+        <p className="schematic-disclosure">Conceptual schematic, not a spatial simulation.</p>
         <p className="simulation-caption">{hidden ? 'The cabin sensor is all you can see. Reveal the modeled breathing zone to compare.' : metrics.truth != null && metrics.alert == null ? 'The modeled breathing zone crossed the selected reference. The current sensors have yet to alert.' : metrics.truth != null && metrics.alert != null ? `The modeled zone crossed at ${metrics.truth} s. A sensor first alerted at ${metrics.alert} s.` : !eligible ? 'A complete one-hour averaging window is required before assessing this reference.' : 'No modeled local crossing of the selected reference so far.'}</p>
       </section>
       <details className="panel readouts" open><summary>Telemetry</summary>

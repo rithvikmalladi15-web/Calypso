@@ -7,7 +7,7 @@ export function CabinDiagram({point, sensors, heat, coverage, hidden, onMove}: {
   playing: boolean; ventilation: number; onMove?: (id: string,x: number,y: number) => void
 }) {
   const selected = useRef<string | null>(null)
-  return <svg className="cabin" viewBox="0 0 800 470" role="img" aria-label="Two-compartment schematic of a crew member in a spacecraft cabin. Sensor controls are available below the diagram.">
+  return <div className="credited-illustration"><svg className="cabin" viewBox="0 0 800 470" role="img" aria-label="Two-compartment schematic of a crew member in a spacecraft cabin. Sensor controls are available below the diagram.">
     <defs>
       <pattern id="draft" width="20" height="20" patternUnits="userSpaceOnUse"><path d="M20 0H0V20" fill="none" stroke="#244257" strokeWidth=".6"/></pattern>
       <linearGradient id="suit" x2="1" y2="1"><stop stopColor="#d5e1e9"/><stop offset=".57" stopColor="#859daf"/><stop offset="1" stopColor="#465f74"/></linearGradient>
@@ -60,9 +60,8 @@ export function CabinDiagram({point, sensors, heat, coverage, hidden, onMove}: {
       <text x="22" y="448">CABIN AIR</text><text x="778" y="448" textAnchor="end">{hidden ? 'Cabin sensor view' : 'Dashed outline · modeled breathing zone'}</text>
     </g>
     <g pointerEvents="none">
-      <rect x="20" y="31" width="151" height="23" rx="3" fill="#111318" stroke="#455468"/>
-      <text x="30" y="47" fontSize="12" fill="#f0f2f5">AI-assisted illustration</text>
+      <text x="30" y="47" fontSize="12" fill="#b4bfcc" opacity=".75">Made by AI</text>
     </g>
-  </svg>
+  </svg><span className="ai-image-credit">Made by AI · Conceptual illustration</span></div>
 }
 export const zoneName = (sensor: Sensor) => isLocal(sensor) ? 'Breathing zone' : 'Cabin'

@@ -6,7 +6,7 @@ import type { RunContext } from '../../server/roger'
 
 type Message={role:'user'|'model';text:string;sources?:{id:string;title:string;url:string}[];sample?:number}
 export function RogerAvatar({busy=false}:{busy?:boolean}) {
-  return <svg className={'roger-avatar'+(busy?' thinking':'')} viewBox="0 0 120 120" aria-hidden="true">
+  return <span className="roger-portrait"><svg className={'roger-avatar'+(busy?' thinking':'')} viewBox="0 0 120 120" aria-hidden="true">
     <defs><linearGradient id="roger-skin" x1="0" y1="0" x2="1" y2="1"><stop stopColor="#c5f4df"/><stop offset=".55" stopColor="#78cfc2"/><stop offset="1" stopColor="#518dbe"/></linearGradient></defs>
     <ellipse cx="60" cy="108" rx="32" ry="5" fill="#74cabe" opacity=".15"/>
     <g className="roger-body">
@@ -17,7 +17,7 @@ export function RogerAvatar({busy=false}:{busy?:boolean}) {
       <path d="M54 83q7 7 14-1" stroke="#244653" strokeWidth="3" fill="none" strokeLinecap="round"/>
       <ellipse cx="31" cy="79" rx="7" ry="3" fill="#dfedc4" opacity=".55"/><ellipse cx="90" cy="79" rx="7" ry="3" fill="#dfedc4" opacity=".55"/>
     </g>
-  </svg>
+  </svg><span className="ai-image-credit">Made by AI</span></span>
 }
 export function runSnapshot():RunContext {
   const s=useSim.getState(), point=s.points[s.points.length-1], rule=thresholds[s.thresholdId], metrics=detect(s.points,s.sensors,s.noise,rule.ppm,rule.windowSeconds)

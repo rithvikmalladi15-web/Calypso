@@ -444,3 +444,16 @@ main>footer{padding-bottom:80px}
 .viewer .timeline .chart{margin-bottom:8px}.chart-events{margin:8px 0 16px}.viewer .playbar{border-bottom:1px solid var(--line)}@media(max-width:600px){.roger-launcher{width:56px;padding:0;justify-content:center}.roger-launcher>span,.roger-launcher>svg{display:none}.roger-launcher .roger-avatar{width:48px;height:48px}}
 
 .crew-integrated{scroll-margin-top:24px}.crew-integrated .crew-heading h2{font-size:24px}.crew-integrated .crew-workbench{grid-template-columns:minmax(260px,.8fr) minmax(0,1.2fr)}.crew-integrated .crew-view svg{max-height:420px}.crew-integrated .crew-details{display:grid;gap:12px}@media(max-width:760px){.crew-integrated .crew-workbench{grid-template-columns:1fr}}
+
+/* Submission polish: quiet attribution and consistent scientific hierarchy. */
+.credited-illustration{min-width:0;background:#070a0e}
+.ai-image-credit{display:block;background:transparent;color:rgba(196,209,221,.78);font:500 11px/1.5 Barlow,system-ui,sans-serif;letter-spacing:.01em;padding:5px 12px 8px;text-align:right;pointer-events:none}
+.crew-view>.ai-image-credit{border:0}
+.roger-portrait{display:inline-flex;flex-direction:column;align-items:center;flex-shrink:0;position:relative}
+.roger-portrait .ai-image-credit{font-size:10px;line-height:12px;padding:0;white-space:nowrap;color:rgba(213,231,235,.8)}
+.roger-launcher{height:auto;min-height:76px;border-radius:16px;box-shadow:0 4px 20px #0003}
+.roger-header .roger-portrait .ai-image-credit{font-size:10px}
+.chart-tools{margin:0 0 14px;border:0}.chart-tools summary{cursor:pointer;font-size:13px;color:var(--muted);padding:8px 0}.chart-tools .actions{padding-top:8px}
+.panel-title{letter-spacing:.035em}.page-heading p{max-width:70ch}.section>p{max-width:90ch}.section h2{line-height:1.25}.source{padding-block:18px}
+.instrument-strip{margin-bottom:0}.crew-integrated .crew-heading{padding-bottom:16px;border-bottom:1px solid var(--line)}
+@media(max-width:600px){.roger-launcher>.roger-portrait{display:inline-flex}.roger-launcher{width:72px;min-height:72px;padding:4px;border-radius:14px}.roger-launcher .roger-avatar{height:46px;width:46px}.roger-panel{bottom:calc(94px + env(safe-area-inset-bottom))}.ai-image-credit{font-size:11px}.chart-tools summary{min-height:44px;display:list-item;align-content:center}}

@@ -63,6 +63,7 @@ export function CrewHealthPanel() {
             <text x={item.side===1?290:10} y={item.labelY-6} textAnchor={item.side===1?'end':'start'}>{item.name}</text>
           </g>)}
         </svg>
+        <span className="ai-image-credit">Made by AI · Illustrative body map</span>
         <div className="crew-system-buttons" role="group" aria-label="Body systems">
           {systems.map((item,index)=><button key={item.name} aria-pressed={selected===index} onClick={()=>setSelected(index)}>{item.name}</button>)}
         </div>

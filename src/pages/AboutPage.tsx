@@ -6,7 +6,7 @@ export function AboutPage() {
       <p>A cabin sensor can report a lower concentration than a poorly mixed breathing zone. CALYPSO lets a judge compare the two readings, move the virtual sensor, and replay the same simulated samples.</p>
       <h2>What you can reproduce</h2>
       <p>The guided run compares two sensor locations with identical model settings. Download the data or save both runs and open them in Experiments.</p>
-      <h2>Credits</h2><p>CALYPSO’s design and development used AI assistance. The archived astronaut illustration is labeled as AI-generated.</p>
+      <h2>Credits</h2><p>CALYPSO’s design and development used AI assistance. The cabin cartoon, body map, Roger mascot, and archived astronaut asset carry “Made by AI” labels. These transparent labels identify illustrations; plotted model output and NASA measurements are not AI-generated data. Interface icons come from Lucide.</p>
       <h2>Roadmap</h2>
       <p>Compare the simplified model against a documented chamber experiment and report agreement and uncertainty across operating conditions.</p>
       <div className="actions"><a className="button primary" href="#/simulation">Launch workbench</a><a className="button" href="#/research">Review evidence</a></div>
