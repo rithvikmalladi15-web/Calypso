@@ -11,7 +11,7 @@ export function LifeSupportControls({busy=false,inspecting=false}:{busy?:boolean
   const disabled=busy||inspecting||latest.t>=3600||s.interventions.length>=100
   const last=s.interventions.at(-1)
   const delta=latest.local-unchanged.local
-  return <section className="life-support-console" aria-label="Life support interventions">
+  return <section id="life-support" className="life-support-console" aria-label="Life support interventions">
     <div className="console-heading"><div><h2>Life support</h2><p>Apply a change at {latest.t} s, then watch the next minute. Past samples stay intact.</p></div><button className="primary" disabled={busy||inspecting||latest.t>=3600} onClick={()=>s.advance(60)}>Advance 60 s</button></div>
     {inspecting&&<p role="status">Return to the latest sample to apply an intervention.</p>}
     <div className="support-actions">

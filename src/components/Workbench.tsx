@@ -1,3 +1,4 @@
+import { InterventionPreview } from "./InterventionPreview"
 import { LifeSupportControls } from './LifeSupportControls'
 import { defaultSupport, supportTimeline, timeAboveReference } from '../simulation/lifeSupport'
 import { CrewHealthPanel } from './CrewHealthPanel'
@@ -94,7 +95,6 @@ export function Workbench({lab = false}: {lab?: boolean}) {
     download(new Blob([[headings,...rows.map(row=>row.join(','))].join('\n')],{type:'text/csv'}),'calypso-co2.csv')
   }
   async function exportPng(kind:'chart'|'cabin') {
-    if(kind==='cabin' && viewport.current?.querySelector('.scene-canvas canvas')){viewport.current.querySelector<HTMLButtonElement>('[data-export-3d]')?.click();return}
     const svg = kind === 'cabin' ? viewport.current?.querySelector('svg.cabin') : chart.current?.querySelector('svg.recharts-surface')
     if (!(svg instanceof SVGSVGElement)) { setStatus('Chart is unavailable.'); return }
     try { await downloadChart(svg,kind === 'cabin' ? 'calypso-cabin.png' : undefined) } catch { setStatus('Could not export the chart as PNG.') }
@@ -179,7 +179,8 @@ export function Workbench({lab = false}: {lab?: boolean}) {
         </div>
       </details>
       <section ref={viewport} className="panel viewer">
-        <div className="panel-title"><Crosshair size={16}/> Cabin view <span className="viewport-state end"><i aria-hidden="true"/>{s.running ? "Running" : "Paused"}</span></div>
+        <div className="panel-title"><Crosshair size={16}/> Experiment console <span className="viewport-state end"><i aria-hidden="true"/>{s.running ? "Running" : "Paused"}</span></div>
+        <nav className="workspace-sections" aria-label="Experiment sections"><a href="#co2-timeline" onClick={event=>{event.preventDefault();chart.current?.scrollIntoView({block:'start'})}}>Air timeline</a><a href="#crew-health-context" onClick={event=>{event.preventDefault();crew.current?.scrollIntoView({block:'start'})}}>Cabin &amp; crew</a>{!lab&&<><a href="#life-support" onClick={event=>{event.preventDefault();document.getElementById('life-support')?.scrollIntoView({block:'start'})}}>Life support</a><a href="#intervention-preview" onClick={event=>{event.preventDefault();document.getElementById('intervention-preview')?.scrollIntoView({block:'start'})}}>Compare actions</a></>}</nav>
         <div className="instrument-switch" role="group" aria-label="Viewport instrument"><button aria-pressed={instrument==='cabin'} onClick={()=>setInstrument('cabin')}>Cabin sensor</button><button disabled={hidden} aria-pressed={instrument==='local'} onClick={()=>setInstrument('local')}>Modeled breathing zone</button></div>
         <div className="playbar"><button className="primary" disabled={solver.pending || (!s.running && latest.t>=3600)} onClick={()=>set({running:!s.running})}>{s.running ? <Pause size={15}/> : <Play size={15}/>} {s.running ? 'Pause' : 'Run simulation'}</button>
           <button aria-label="Reset simulation" title="Reset simulation" disabled={solver.pending} onClick={s.reset}><RotateCcw size={15}/></button>
@@ -191,17 +192,7 @@ export function Workbench({lab = false}: {lab?: boolean}) {
           }}>{solver.pending ? 'Solving…' : 'Run 300 s'}</button>{rule.windowSeconds>0 && <button disabled={solver.pending} onClick={()=>{s.reset();solver.solve(points=>set({points,running:false}),3600)}}>Run 3,600 s</button>}<span className="mono end" title="Elapsed model time">{String(Math.floor(latest.t/60)).padStart(2,'0')}:{String(latest.t%60).padStart(2,'0')}</span></div>
         <div className="instrument-reading" aria-describedby="instrument-description"><span>{instrument==='cabin' ? 'Cabin sensor' : 'Modeled breathing zone'}</span><strong>{fmt(instrument==='cabin' ? reading(point,cabinSensor,s.noise) : point.local)} <small>ppm</small></strong>{!masked && <span>Local − cabin · {fmt(point.local-point.cabin)} ppm</span>}</div>
         <p id="instrument-description" className="instrument-description">{hidden ? "Reveal the modeled zone after running the exercise." : masked ? "Sampling mixed cabin air" : "The dashed outline marks the modeled breathing zone."}</p>
-        <dl className="instrument-strip">
-          <div><dt>Cabin</dt><dd>{fmt(point.cabin)} ppm</dd></div>
-          {!masked && <><div><dt>Modeled local</dt><dd>{fmt(point.local)} ppm</dd></div><div><dt>Local difference</dt><dd>{fmt(point.local-point.cabin)} ppm</dd></div></>}
-          <div><dt>Sample time</dt><dd>{point.t} s</dd></div>
-        </dl>
         <div className="detection-readout" role="status">{!eligible ? 'Awaiting 1 h of samples' : metrics.alert != null ? `Detected at ${metrics.alert} s` : `Not detected in ${latest.t} s`}<small>Current sensor layout · {rule.windowSeconds ? "one-hour average reference" : "demo rule"}</small></div>
-        <section ref={crew} id="crew-health-context" className={lab?"paired-models lab-model":"paired-models"} aria-label="Cabin and crew workspace">
-          <div className="cabin-companion"><header className="model-heading"><h2>Cabin environment</h2><p>Two modeled air volumes · current sample {point.t} s</p></header>        <CabinView noise={s.noise} point={point} sensors={s.sensors} airflow={false} heat={heat} coverage={coverage} hidden={masked} playing={s.running} ventilation={s.settings.ventilation} onMove={lab && !hidden ? move : undefined}/></div>
-          {!lab&&<section className="crew-companion" aria-label="Crew health in this simulation"><CrewHealthPanel compact point={point} oxygen={oxygenPoints.find(sample=>sample.t===point.t)?.oxygen} exposureSeconds={timeAboveReference(s.points.filter(sample=>sample.t<=point.t),threshold)} masked={hidden}/></section>}
-        </section>
-        {!lab&&<LifeSupportControls busy={solver.pending} inspecting={cursor!==null}/>}
     <section ref={chart} id="co2-timeline" className="panel timeline">
       <div className="panel-title"><Activity size={16}/> CO₂ timeline <span className="micro end">MODEL OUTPUT · PPM</span></div>
       <div className="panel-pad">
@@ -226,12 +217,18 @@ export function Workbench({lab = false}: {lab?: boolean}) {
       </div>
     </section>
 
+        <section ref={crew} id="crew-health-context" className={lab?"paired-models lab-model":"paired-models"} aria-label="Cabin and crew workspace">
+          <div className="cabin-companion"><header className="model-heading"><h2>Cabin environment</h2><p>Two modeled air volumes · current sample {point.t} s</p></header>        <CabinView noise={s.noise} point={point} sensors={s.sensors} airflow={false} heat={heat} coverage={coverage} hidden={masked} playing={s.running} ventilation={s.settings.ventilation} onMove={lab && !hidden ? move : undefined}/></div>
+          {!lab&&<section className="crew-companion" aria-label="Crew health in this simulation"><CrewHealthPanel compact point={point} oxygen={oxygenPoints.find(sample=>sample.t===point.t)?.oxygen} exposureSeconds={timeAboveReference(s.points.filter(sample=>sample.t<=point.t),threshold)} masked={hidden}/></section>}
+        </section>
+        {!lab&&<LifeSupportControls busy={solver.pending} inspecting={cursor!==null}/>}
+        {!lab&&<InterventionPreview disabled={solver.pending||cursor!==null}/> }
         {solver.pending && <div className="solve-placeholder" role="status">Computing the run…</div>}
 
         <p className="schematic-disclosure">Conceptual schematic, not a spatial simulation.</p>
         <p className="simulation-caption">{hidden ? 'The cabin sensor is all you can see. Reveal the modeled breathing zone to compare.' : metrics.truth != null && metrics.alert == null ? 'The modeled breathing zone crossed the selected reference. The current sensors have yet to alert.' : metrics.truth != null && metrics.alert != null ? `The modeled zone crossed at ${metrics.truth} s. A sensor first alerted at ${metrics.alert} s.` : !eligible ? 'A complete one-hour averaging window is required before assessing this reference.' : 'No modeled local crossing of the selected reference so far.'}</p>
       </section>
-      <details className="panel readouts" open><summary>Telemetry</summary>
+      <details className="panel readouts"><summary>Telemetry</summary>
         <div className="panel-title"><AudioLines size={16}/> Live telemetry <span className={'end live '+(s.running ? 'active' : '')} aria-label={s.running ? 'Running' : 'Paused'}/></div>
         <div className="panel-pad">
           <div className="metric"><span>Cabin CO₂</span><strong>{fmt(point.cabin)} <small>ppm</small></strong></div>

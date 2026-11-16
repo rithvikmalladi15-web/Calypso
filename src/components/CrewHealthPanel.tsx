@@ -1,6 +1,5 @@
 import type { Point } from '../simulation/engine'
-import { lazy, Suspense, useState } from 'react'
-const ScientificScene=lazy(()=>import('./ScientificScene'))
+import { useState } from 'react'
 import { useSim } from '../stores/simulationStore'
 import { thresholds } from '../simulation/thresholds'
 
@@ -23,8 +22,6 @@ const phases = [
 ]
 
 export function CrewHealthPanel({compact=false,point,oxygen,exposureSeconds=0,masked:maskOverride}:{compact?:boolean;point?:Point;oxygen?:number;exposureSeconds?:number;masked?:boolean}={}) {
-  const [three,setThree]=useState(()=>typeof WebGL2RenderingContext!=='undefined')
-  const [unavailable,setUnavailable]=useState(false)
   const [selected,setSelected] = useState(2)
   const [detailsOpen,setDetailsOpen]=useState(!compact)
   const chooseSystem=(index:number)=>{setSelected(index);setDetailsOpen(true)}
@@ -42,13 +39,10 @@ export function CrewHealthPanel({compact=false,point,oxygen,exposureSeconds=0,ma
       <h2>{compact?"Crew exposure":"Crew Health"}</h2>
       <p>{compact?"Same run · same sample · research context, not a health diagnosis":"Explore the body alongside your current cabin run. NASA research context is shown here; the model calculates air concentrations, not organ function or health outcomes."}</p>
     </header>
-    {compact&&sample&&<div className="crew-live-exposure" aria-label="Current crew air exposure"><span>Sample <b>{sample.t} s</b></span><span>Breathing-zone CO₂ <b>{masked?'Masked':Math.round(sample.local).toLocaleString()+' ppm'}</b></span><span>Modeled cabin O₂ <b>{oxygen!=null?oxygen.toFixed(3)+'%':'Not calculated'}</b></span><span>Raw time above selected CO₂ reference <b>{masked?'Masked':exposureSeconds.toFixed(1)+' s'}</b></span><p>{masked?'Reveal the modeled zone to inspect its air history.':sample.local>=rule.ppm?'The local air is above the plotted reference. Amber marks the air-exposure cue, not injured lungs.':'The local air is below the plotted reference at this sample. This does not establish a health outcome.'}</p></div>}
+    {compact&&sample&&<div className="crew-live-exposure" aria-label="Current crew air exposure"><span>Sample <b>{sample.t} s</b></span><span>Breathing-zone CO₂ <b>{masked?'Masked':Math.round(sample.local).toLocaleString()+' ppm'}</b></span><span>Modeled cabin O₂ <b>{oxygen!=null?oxygen.toFixed(3)+'%':'Not calculated'}</b></span><span>Raw time above selected CO₂ reference <b>{masked?'Masked':exposureSeconds.toFixed(1)+' s'}</b></span><p>{masked?'Reveal the modeled zone to inspect its air history.':sample.local>=rule.ppm?'The local air is above the plotted reference. This is an air-exposure finding, not a prediction of injured lungs.':'The local air is below the plotted reference at this sample. This does not establish a health outcome.'}</p></div>}
     <div className="crew-workbench">
       <section className="crew-view" aria-label="Interactive crew anatomy">
         <div className="crew-view-title">Crew anatomy <span>Illustrative body map</span></div>
-        <div className="scene-mode" role="group" aria-label="Body illustration mode"><button aria-pressed={three} onClick={()=>setThree(true)}>3D body</button><button aria-pressed={!three} onClick={()=>setThree(false)}>2D body map</button></div>
-        {unavailable&&<p className="scene-help" role="status">3D is unavailable on this device. Use the body map and system buttons below.</p>}
-        {three?<Suspense fallback={<p className="scene-help">Loading interactive body…</p>}><ScientificScene kind="body" selectedSystem={selected} environmentalExposure={compact&&!masked&&sample?sample.local/rule.ppm:undefined} onSystem={chooseSystem} onUnavailable={()=>{setThree(false);setUnavailable(true)}}/></Suspense>:<>
         <svg viewBox="0 0 300 420" role="img" aria-label="Human body schematic with selectable research regions">
           <defs>
             <pattern id="crew-grid" width="15" height="15" patternUnits="userSpaceOnUse"><path d="M15 0H0V15" fill="none" stroke="#224451" strokeWidth=".5"/></pattern>
@@ -75,7 +69,7 @@ export function CrewHealthPanel({compact=false,point,oxygen,exposureSeconds=0,ma
             <text x={item.side===1?290:10} y={item.labelY-6} textAnchor={item.side===1?'end':'start'}>{item.name}</text>
           </g>)}
         </svg>
-        <span className="ai-image-credit">Made by AI · Illustrative body map</span></>}
+        <span className="ai-image-credit">Made by AI · Illustrative body map</span>
         <div className="crew-system-buttons" role="group" aria-label="Body systems">
           {systems.map((item,index)=><button key={item.name} aria-pressed={selected===index} onClick={()=>chooseSystem(index)}>{item.name}</button>)}
         </div>
