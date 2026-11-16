@@ -7,7 +7,7 @@ export function download(blob: Blob, filename: string) {
   window.setTimeout(()=>URL.revokeObjectURL(url),1000)
 }
 
-export async function downloadChart(chart: SVGSVGElement) {
+export async function downloadChart(chart: SVGSVGElement, filename = 'calypso-co2-chart.png') {
   const copy = chart.cloneNode(true) as SVGSVGElement
   copy.setAttribute('xmlns','http://www.w3.org/2000/svg')
   const width = chart.clientWidth
@@ -30,6 +30,6 @@ export async function downloadChart(chart: SVGSVGElement) {
     context.drawImage(image,0,0,canvas.width,canvas.height)
     const png = await new Promise<Blob|null>(resolve=>canvas.toBlob(resolve,'image/png'))
     if (!png) throw new Error('PNG unavailable')
-    download(png,'calypso-co2-chart.png')
+    download(png,filename)
   } finally { URL.revokeObjectURL(url) }
 }

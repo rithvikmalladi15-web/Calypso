@@ -30,6 +30,7 @@ export function Workbench({lab = false}: {lab?: boolean}) {
   const [compare, setCompare] = useState(false)
   const [sharedLink, setSharedLink] = useState('')
   const chart = useRef<HTMLElement>(null)
+  const viewport = useRef<HTMLElement>(null)
   const [controlsOpen, setControlsOpen] = useState(()=>typeof matchMedia === 'undefined' || !matchMedia('(max-width:600px)').matches)
   useEffect(()=>{
     if (lab) return
@@ -65,10 +66,10 @@ export function Workbench({lab = false}: {lab?: boolean}) {
     const headings = hidden ? 'elapsed_s,cabin_co2_ppm' : 'elapsed_s,cabin_co2_ppm,breathing_zone_co2_ppm'
     download(new Blob([[headings,...rows.map(row=>row.join(','))].join('\n')],{type:'text/csv'}),'calypso-co2.csv')
   }
-  async function exportPng() {
-    const svg = chart.current?.querySelector('svg.recharts-surface')
+  async function exportPng(kind:'chart'|'cabin') {
+    const svg = kind === 'cabin' ? viewport.current?.querySelector('svg.cabin') : chart.current?.querySelector('svg.recharts-surface')
     if (!(svg instanceof SVGSVGElement)) { setStatus('Chart is unavailable.'); return }
-    try { await downloadChart(svg) } catch { setStatus('Could not export the chart as PNG.') }
+    try { await downloadChart(svg,kind === 'cabin' ? 'calypso-cabin.png' : undefined) } catch { setStatus('Could not export the chart as PNG.') }
   }
   const peak = s.points.reduce((max, sample) => Math.max(max, sample.local), 0)
   const timeAbove = s.points.slice(1).reduce((total, sample, index) => {
@@ -119,7 +120,7 @@ export function Workbench({lab = false}: {lab?: boolean}) {
           <label className="check"><Crosshair size={15}/> Placement halos<input type="checkbox" checked={coverage} onChange={e=>setCoverage(e.target.checked)}/></label>
         </div>
       </details>
-      <section className="panel viewer">
+      <section ref={viewport} className="panel viewer">
         <div className="panel-title"><Crosshair size={16}/> Cabin view <span className="viewport-state end"><i aria-hidden="true"/>{s.running ? "Running" : "Paused"}</span></div>
         <div className="instrument-switch" role="group" aria-label="Viewport instrument"><button aria-pressed={instrument==='cabin'} onClick={()=>setInstrument('cabin')}>Cabin sensor</button><button disabled={hidden} aria-pressed={instrument==='local'} onClick={()=>setInstrument('local')}>Modeled breathing zone</button></div>
         <div className="instrument-reading" aria-describedby="instrument-description"><span>{instrument==='cabin' ? 'Cabin sensor' : 'Modeled breathing zone'}</span><strong>{fmt(instrument==='cabin' ? reading(point,cabinSensor,s.noise) : point.local)} <small>ppm</small></strong>{!masked && <span>Local − cabin · {fmt(point.local-point.cabin)} ppm</span>}</div>
@@ -152,6 +153,15 @@ export function Workbench({lab = false}: {lab?: boolean}) {
           <div className="subheading">VIRTUAL SENSORS</div>
           {s.sensors.map(sensor=><div className="sensor-read" key={sensor.id}><span>{sensor.id} · {hidden ? 'Virtual' : zoneName(sensor)}</span><b>{fmt(reading(point,sensor,s.noise))} ppm</b></div>)}
           {!hidden && metrics.truth != null && metrics.alert == null && <div className="notice">Local crossing missed by sensors</div>}
+          <section className="evidence-panel" aria-label="Recommended actions">
+            <h3>Recommended actions</h3>
+            <ul className="model-actions">
+              {hidden ? <li><strong>Hold</strong> Reveal the modeled zone to assess detection.</li>
+                : metrics.truth != null && metrics.alert == null ? <li><strong>Critical · demo</strong> The local crossing went undetected. Compare with a sensor in the breathing zone.</li>
+                : metrics.truth != null ? <li><strong>Info</strong> Compare the first alert with the first local crossing to assess timing.</li>
+                : <li><strong>Info</strong> Run a longer comparison or try reduced ventilation to investigate when local CO₂ crosses the demo threshold.</li>}
+            </ul>
+          </section>
           <ModelEvidence settings={s.settings}/>
         </div>
       </details>
@@ -161,8 +171,9 @@ export function Workbench({lab = false}: {lab?: boolean}) {
       <div className="panel-pad">
         <div className="legend"><span className="cyan">● Cabin</span>{!hidden && <span>● Breathing zone</span>}<span>Elapsed model time (s)</span></div>
         <div className="actions">
+          <button onClick={()=>void exportPng('cabin')}>Export cabin PNG</button>
           {!hidden && <label className="check"><input type="checkbox" checked={compare} onChange={event=>setCompare(event.target.checked)}/> Compare against baseline</label>}
-          <button onClick={exportCsv}>Export CSV</button><button onClick={()=>void exportPng()}>Export chart PNG</button>
+          <button onClick={exportCsv}>Export CSV</button><button onClick={()=>void exportPng('chart')}>Export chart PNG</button>
         </div>
         {!hidden && <div className="stats">
           <div>Cabin CO₂ <b>{fmt(point.cabin)} ppm</b>{delta(point.cabin,reference.cabin)} vs baseline</div>
