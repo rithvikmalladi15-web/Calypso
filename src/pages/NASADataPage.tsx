@@ -1,3 +1,4 @@
+import { ModelComparison } from '../components/ModelComparison'
 import { usePreferences } from '../app/SettingsContext'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Upload } from 'lucide-react'
@@ -78,6 +79,7 @@ export function NASADataPage() {
       <Upload size={21}/><div><strong>{loading ? 'Loading telemetry…' : name || 'Import NASA CSV'}</strong><p>Drop a CSV here or browse. Browser imports are held in memory.</p></div>
       <label className="button">Browse CSV<input type="file" accept=".csv,text/csv" onChange={e => {void open(e.target.files?.[0]); e.target.value = ''}} /></label>
     </section>
+    <ModelComparison/>
     {error && <p role="alert" className="notice">{error}</p>}
     {data && <>
       <section className="panel section">
