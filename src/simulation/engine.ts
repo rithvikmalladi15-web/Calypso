@@ -16,6 +16,9 @@ export function step(point: Point, settings: Settings, duration = 1): Point {
   const count = Math.ceil(duration)
   const dt = count ? duration / count : 0
   for (let i = 0; i < count; i++) {
+    // Euler step for Vb·dCb/dt = S − Q(Cb−Cc), Vc·dCc/dt = Q(Cb−Cc) − RCc.
+    // Calypso model derivation: research/evidence.md. NASA-STD-3001 §6.2.1.3
+    // motivates the ventilation/removal distinction; coefficients are illustrative.
     const exchange = (.006 + .074 * settings.ventilation) * (local - cabin)
     cabin += dt * (exchange - .15 * settings.scrubber * cabin) / 30
     local += dt * (22 * settings.activity - exchange)

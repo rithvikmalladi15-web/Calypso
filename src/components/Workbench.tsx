@@ -1,3 +1,4 @@
+import { useScenarioSolver } from '../simulation/useScenarioSolver'
 import { download, downloadChart } from '../lib/chartDownloads'
 import { readScenario, scenarioUrl } from '../simulation/scenarioLink'
 import { useEffect, useMemo, useRef, useState } from 'react'
@@ -13,6 +14,7 @@ const fmt = (n: number) => Math.round(n).toLocaleString()
 export function Workbench({lab = false}: {lab?: boolean}) {
   const s = useSim()
   const set = useSim.setState
+  const solver = useScenarioSolver(s.settings)
   const [cursor, setCursor] = useState<number | null>(null)
   const latest = s.points[s.points.length-1] ?? initial
   const point = s.points[Math.min(cursor ?? s.points.length - 1, s.points.length - 1)] ?? initial
@@ -127,11 +129,15 @@ export function Workbench({lab = false}: {lab?: boolean}) {
           <div><dt>Sample time</dt><dd>{point.t} s</dd></div>
         </dl>
         <CabinDiagram point={point} sensors={s.sensors} airflow={air} heat={heat} coverage={coverage} hidden={masked} playing={s.running} ventilation={s.settings.ventilation} onMove={lab ? move : undefined}/>
-        <div className="playbar"><button className="primary" disabled={!s.running && latest.t>=3600} onClick={()=>set({running:!s.running})}>{s.running ? <Pause size={15}/> : <Play size={15}/>} {s.running ? 'Pause' : 'Run simulation'}</button>
-          <button aria-label="Reset simulation" title="Reset simulation" onClick={s.reset}><RotateCcw size={15}/></button>
-          <button disabled={s.running || latest.t>=3600} onClick={s.tick}>Step 1 s</button>
+        <div className="playbar"><button className="primary" disabled={solver.pending || (!s.running && latest.t>=3600)} onClick={()=>set({running:!s.running})}>{s.running ? <Pause size={15}/> : <Play size={15}/>} {s.running ? 'Pause' : 'Run simulation'}</button>
+          <button aria-label="Reset simulation" title="Reset simulation" disabled={solver.pending} onClick={s.reset}><RotateCcw size={15}/></button>
+          <button disabled={solver.pending || s.running || latest.t>=3600} onClick={s.tick}>Step 1 s</button>
           <select aria-label="Playback speed" value={s.speed} onChange={event=>set({speed:Number(event.target.value)})}>{[.5,1,2,4].map(speed=><option key={speed} value={speed}>{speed}×</option>)}</select>
-          <button onClick={()=>set({points:run(s.settings),running:false})}>Run 300 s</button><span className="mono end" title="Elapsed model time">{String(Math.floor(latest.t/60)).padStart(2,'0')}:{String(latest.t%60).padStart(2,'0')}</span></div>
+          <button disabled={solver.pending} onClick={()=>{
+            set({running:false})
+            solver.solve(points=>{setCursor(null);set({points,running:false})})
+          }}>{solver.pending ? 'Solving…' : 'Run 300 s'}</button><span className="mono end" title="Elapsed model time">{String(Math.floor(latest.t/60)).padStart(2,'0')}:{String(latest.t%60).padStart(2,'0')}</span></div>
+        {solver.milliseconds != null && <p className="simulation-caption">Solved in {solver.milliseconds.toFixed(2)} ms</p>}
         <p className="simulation-caption">{hidden ? 'The cabin sensor is all you can see. Reveal the modeled breathing zone to compare.' : metrics.truth != null && metrics.alert == null ? 'The modeled breathing zone crossed the demo threshold. The current sensors have yet to alert.' : metrics.truth != null && metrics.alert != null ? `The modeled zone crossed at ${metrics.truth} s. A sensor first alerted at ${metrics.alert} s.` : 'The modeled breathing zone is below the demonstration threshold so far.'}</p>
       </section>
       <details className="panel readouts" open><summary>Telemetry</summary>
