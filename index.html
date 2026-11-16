@@ -1,1 +1,29 @@
-<!doctype html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><link rel="icon" href="/favicon.svg"><title>Calypso — Environmental Observatory</title></head><body><div id="root"></div><script type="module" src="/src/main.tsx"></script></body></html>
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="icon" href="/favicon.svg">
+  <link rel="canonical" href="https://calypso-tan.vercel.app/">
+  <link rel="alternate" type="text/plain" title="CALYPSO project overview" href="/llms.txt">
+  <meta name="description" content="CALYPSO is an educational spacecraft cabin CO₂ simulator. Compare two virtual sensor placements on the same run and explore NASA RR-1 observations.">
+  <title>CALYPSO — Spacecraft Cabin CO₂ Simulator</title>
+</head>
+<body>
+  <div id="root">
+    <main>
+      <h1>CALYPSO — Spacecraft Cabin CO₂ Simulator</h1>
+      <p>CALYPSO is an educational workbench for investigating how a cabin sensor can miss a local CO₂ buildup near an astronaut’s face.</p>
+      <h2>One run, two sensor placements</h2>
+      <p>In the 300-second reduced-ventilation demo, the modeled breathing zone crosses the 1,250 ppm experiment rule at 36 seconds. The cabin sensor never reaches the threshold during the run. Moving the same virtual sensor into the breathing zone detects the crossing at 36 seconds.</p>
+      <p>The two-compartment model uses illustrative parameters. The experiment rule is for the demo. The NASA RR-1 flight and ground observations are available separately and include CO₂, temperature, and relative humidity.</p>
+      <ul>
+        <li><a href="/#/simulation">Interactive guided demo</a> (requires JavaScript)</li>
+        <li><a href="/llms.txt">Plain-text project overview, methods, and source links</a></li>
+        <li><a href="/#/nasa-data">NASA Data explorer</a> (requires JavaScript)</li>
+      </ul>
+    </main>
+  </div>
+  <script type="module" src="/src/main.tsx"></script>
+</body>
+</html>

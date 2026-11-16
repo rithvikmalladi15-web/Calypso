@@ -1,0 +1,29 @@
+# CALYPSO
+
+> Educational spacecraft cabin CO₂ simulation and sensor placement workbench.
+
+## Project overview
+
+CALYPSO models two air volumes: mixed cabin air and the air near an astronaut’s face. Users can adjust ventilation, CO₂ removal, and crew activity, inspect graphs, and reposition virtual sensors. The model is illustrative and does not provide medical or operational guidance.
+
+## Reproduce the demo
+
+1. In Simulation, select Start 60-second demo. The workbench computes 300 seconds of reduced-ventilation model output.
+2. Reveal the modeled breathing zone. It first crosses the 1,250 ppm demonstration threshold at 36 seconds. The cabin sensor does not reach the threshold within the run.
+3. Move S1 to the breathing zone. The same sensor detects the crossing at 36 seconds on the same model trajectory.
+4. Download comparison data to inspect settings, samples, and detection results.
+
+## Evidence and scope
+
+The model uses two effective volumes with an illustrative local CO₂ source, symmetric exchange, and cabin removal. The 1,250 ppm threshold is an experiment rule. NASA Data displays measured RR-1 CO₂, temperature, and relative humidity for ISS flight and ground control separately from model results.
+
+Crew Health provides a NASA-linked body map. Crew Nutrition totals user-entered nutrients by mission day. Roger is an optional Gemini-powered guide to the model and NASA reference directory.
+
+## Links
+
+- [Public overview](https://calypso-tan.vercel.app/)
+- [Interactive demo](https://calypso-tan.vercel.app/#/simulation)
+- [Research and evidence](https://calypso-tan.vercel.app/#/research)
+- [Bundled RR-1 CSV](https://calypso-tan.vercel.app/data/nasa-iss-telemetry.csv)
+- [NASA Environmental Data Application](https://visualization.osdr.nasa.gov/eda/)
+- [NASA Carbon Dioxide Technical Brief](https://www.nasa.gov/ochmo-tb-004-carbon-dioxide-2/)
