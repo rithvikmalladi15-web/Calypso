@@ -8,6 +8,7 @@ export function AboutPage() {
       <p>The guided run compares two sensor locations with identical model settings. Download the data or save both runs and open them in Experiments.</p>
       <h2>Team</h2>
       <p>TODO: Add team member names, roles, and the registered competition event.</p>
+      <h2>Credits</h2><p>CALYPSO’s design and development used AI assistance. The archived astronaut illustration is labeled as AI-generated.</p>
       <h2>Roadmap</h2>
       <p>Compare the simplified model against a documented chamber experiment and report agreement and uncertainty across operating conditions.</p>
       <div className="actions"><a className="button primary" href="#/simulation">Launch workbench</a><a className="button" href="#/research">Review evidence</a></div>

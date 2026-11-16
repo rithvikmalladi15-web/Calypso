@@ -24,3 +24,16 @@ export function scenarioUrl(settings: Settings) {
   })
   return url.href
 }
+
+export function readFieldSensors(hash:string,columns:number,rows:number) {
+  const value=new URLSearchParams(hash.split('?')[1]).get('sensors')
+  if(value===null)return null
+  const locations=value.split(';')
+  if(locations.length<1 || locations.length>2)return null
+  const sensors=locations.map(location=>{
+    if(!/^\d+,\d+$/.test(location))return null
+    const [x,y]=location.split(',').map(Number)
+    return x<columns && y<rows ? {x,y} : null
+  })
+  return sensors.every(sensor=>sensor!==null) ? sensors : null
+}

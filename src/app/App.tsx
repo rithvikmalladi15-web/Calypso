@@ -1,10 +1,8 @@
+import { FieldWorkbench } from '../components/FieldWorkbench'
 import { AboutPage } from '../pages/AboutPage'
 import { WorkspaceClock } from '../components/WorkspaceClock'
 import { SimulationBoundary } from '../components/SimulationBoundary'
 import { WorkspaceSettings } from '../components/WorkspaceSettings'
-import { CabinDiagram } from '../components/CabinDiagram'
-import { cabinSensor } from '../simulation/sensorModel'
-import { initial } from '../simulation/engine'
 import { GuidedDemo } from '../components/GuidedDemo'
 import { useEffect, useState } from 'react'
 import { Orbit } from 'lucide-react'
@@ -20,9 +18,9 @@ import { useData } from '../stores/dataStore'
 import { routeHref, useRoute, type Route } from './router'
 
 const navigation: {label: string; pages: Route[]}[] = [
-  {label:'Workbench', pages:['Overview','Simulation','Sensor Lab']},
-  {label:'Data sources', pages:['NASA Data','Research','About']},
-  {label:'Analytics', pages:['Experiments','Reports']},
+  {label:'Workbench', pages:['Simulation','Sensor Lab']},
+  {label:'Data sources', pages:['Research']},
+  {label:'Analytics', pages:['Reports']},
 ]
 
 function Overview() {
@@ -47,10 +45,7 @@ function Overview() {
         </div>
         <p className="overview-evidence">The Research page lists the NASA sources, what each was used for, and which assumptions belong to the simulation.</p>
       </div>
-      <figure className="overview-hero-preview">
-        <CabinDiagram point={initial} sensors={[cabinSensor]} ventilation={presets['Reduced ventilation'].ventilation} airflow heat={false} coverage={false} hidden playing={true}/>
-        <figcaption>Starting layout · One sensor in the cabin</figcaption>
-      </figure>
+      <FieldWorkbench compact/>
     </section>
     <section className="panel section overview-how">
       <h2>How it works</h2>
@@ -79,7 +74,7 @@ function Overview() {
     </details>
     <section className="panel section"><h2>{state.scenario}</h2><p>{state.running?'Running':'Paused'} · {last.t} s elapsed</p>
     <div className="stats"><div>Cabin CO₂ <b>{Math.round(last.cabin)} ppm</b></div><div>Breathing zone <b>{Math.round(last.local)} ppm</b></div><div>Virtual sensors <b>{state.sensors.length}</b></div><div>Local threshold crossing <b>{metrics.truth==null?'None':metrics.truth+' s'}</b></div><div>NASA telemetry <b>{imported ? imported.rows.length.toLocaleString()+' source rows' : availability}</b></div></div></section>
-    <h2 className="quick-title">Quick-start scenarios</h2><div className="preset-grid">{Object.entries(presets).map(([name,settings])=><a className="panel section preset" href={routeHref('Simulation')} key={name} onClick={()=>state.select(name as keyof typeof presets)}><h3>{name}</h3><p>{Math.round(settings.ventilation*100)}% ventilation · {settings.activity}× activity</p></a>)}</div>
+    <h2 className="quick-title">Quick-start scenarios</h2><div className="preset-grid">{Object.entries(presets).map(([name,settings])=><a className="panel section preset" href={routeHref('Sensor Lab')} key={name} onClick={()=>state.select(name as keyof typeof presets)}><h3>{name}</h3><p>{Math.round(settings.ventilation*100)}% ventilation · {settings.activity}× activity</p></a>)}</div>
   </>
 }
 export function App() {
@@ -105,18 +100,19 @@ export function App() {
         <nav aria-label="Workspace">
           {navigation.map(group => <div className="nav-group" key={group.label}>
             <span className="nav-group-label">{group.label}</span>
-            {group.pages.map(page => <a key={page} href={routeHref(page)} aria-current={page === route ? 'page' : undefined}>{page}</a>)}
+            {group.pages.map(page => <a key={page} href={routeHref(page)} aria-current={page === route ? 'page' : undefined}>{page==='Research' ? 'Research & Methods' : page}</a>)}
           </div>)}
         </nav>
       </aside>
       <main id="main-content" data-page={routeHref(route).slice(2)} tabIndex={-1} key={route}>
         {route==='Overview' && <Overview/>}
-        {(route==='Simulation'||route==='Sensor Lab') && <SimulationBoundary>{route==='Simulation' && <GuidedDemo/>}<Workbench lab={route==='Sensor Lab'}/></SimulationBoundary>}
+        {route==='Simulation' && <SimulationBoundary><FieldWorkbench/></SimulationBoundary>}
+        {route==='Sensor Lab' && <SimulationBoundary><GuidedDemo/><Workbench lab/></SimulationBoundary>}
         {route==='NASA Data' && <NASADataPage/>}
         {route==='Research' && <ResearchPage/>}
         {route==='About' && <AboutPage/>}
         {(route==='Experiments'||route==='Reports') && <ExperimentsPage report={route==='Reports'}/>}
-        <footer>CALYPSO · Educational research prototype · Modeled outputs are for classroom investigation. · AI-assisted design and development.</footer>
+        <footer>CALYPSO · Educational research prototype · <a href={routeHref('About')}>About &amp; credits</a></footer>
       </main>
     </div>
   </>
