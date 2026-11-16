@@ -40,3 +40,10 @@ Future capabilities include a dedicated helmet washout model, cross-mission over
 ## Deploy to Vercel
 
 Push the project to a Git repository, import it in Vercel, and select the **Vite** framework preset. Use the repository root, `npm run build` as the build command, and `dist` as the output directory. There are no environment variables. The routes use URL hashes. Vite copies the contents of `public` into the production bundle. [Vercel Vite setup](https://vercel.com/docs/frameworks/frontend/vite)
+
+### Roger, the AI lab partner
+Roger is an optional alien assistant, not affiliated with NASA. He explains a snapshot of the latest main-workbench run using Gemini and a curated NASA reference directory. He cannot control the simulation or inspect the separate guided demo, imported CSV contents, or saved reports. Source links describe supporting references; they are not live retrieval or proof of model validation. Masked exercises exclude local results and previous chat from API requests.
+
+Set `GEMINI_API_KEY` as a **server-side** Vercel environment variable for Production and Preview, then redeploy. Optional `GEMINI_MODEL` defaults to `gemini-2.5-flash-lite`. Never use a `VITE_` prefix or commit a key. For local development, launch Vite with these variables provided securely by your shell; `.env.example` documents the names (Vite does not automatically expose `.env` entries to this server handler).
+
+`/api/roger` accepts bounded POST requests, uses a 25-second upstream timeout, returns curated source links only, and sends no raw provider errors or credentials to the browser. Limits are 10 requests per IP and 60 total per minute **per server instance**, not a durable global quota. Configure Google project quotas/budgets and Vercel firewall rate limits for a public launch; distributed instances can exceed these local limits. Chat stays in tab memory, but questions, recent conversation, and a run summary are sent to Google when asking Roger. No API requests occur merely by opening the panel. The simulator remains usable if AI is unavailable.

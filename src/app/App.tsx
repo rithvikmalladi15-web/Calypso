@@ -1,3 +1,4 @@
+import { Roger } from '../components/Roger'
 import { AboutPage } from '../pages/AboutPage'
 import { WorkspaceClock } from '../components/WorkspaceClock'
 import { SimulationBoundary } from '../components/SimulationBoundary'
@@ -119,5 +120,6 @@ export function App() {
         <footer>CALYPSO · Educational research prototype · Modeled outputs are for classroom investigation. · AI-assisted design and development.</footer>
       </main>
     </div>
+    <Roger/>
   </>
 }

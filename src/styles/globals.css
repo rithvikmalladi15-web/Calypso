@@ -358,3 +358,30 @@ main[data-page=sensor-lab] .workstation-heading{padding-bottom:16px;border-botto
 .model-details summary::before{content:'+';margin-right:8px}.model-details[open] summary::before{content:'−'}
 .model-details .evidence-panel{border:0;margin-top:0}
 .guided-demo:not(:has(.viewer)){padding:16px 20px}
+
+/* Roger: an optional companion, never a replacement for the instruments. */
+.roger-companion{position:fixed;right:22px;bottom:20px;z-index:8;color:#edf5f5;font-family:Barlow,system-ui,sans-serif}
+.roger-launcher{height:64px;padding:4px 14px 4px 2px;border-radius:40px;border:1px solid #4b6d78;background:#182630;color:#edf5f5;box-shadow:0 8px 28px #0005;gap:6px}
+.roger-avatar{width:70px;height:70px;overflow:visible;flex-shrink:0}
+.roger-launcher strong,.roger-launcher small{display:block;text-align:left}.roger-launcher strong{font-size:15px}.roger-launcher small{font-size:11px;font-weight:400;color:#adc8cd;margin-top:2px}
+.roger-launch-arrow{margin-left:12px;font-size:20px;color:#a3e6d2}
+.roger-body{transform-origin:60px 90px;animation:roger-float 5s ease-in-out infinite}.roger-eyes{transform-origin:60px 63px;animation:roger-blink 7s infinite}.roger-avatar.thinking .roger-body{animation-duration:1.8s}
+@keyframes roger-float{0%,100%{transform:translateY(0) rotate(-2deg)}50%{transform:translateY(-3px) rotate(2deg)}}
+@keyframes roger-blink{0%,43%,47%,100%{transform:scaleY(1)}45%{transform:scaleY(.12)}}
+.roger-panel{width:390px;height:min(650px,calc(100dvh - 116px));margin-bottom:14px;display:flex;flex-direction:column;overflow:hidden;background:#141e28;border:1px solid #415965;border-radius:18px;box-shadow:0 18px 70px #0007}
+.roger-header{display:flex;align-items:center;gap:10px;padding:12px 16px 8px;background:#1b2b35;border-bottom:1px solid #354955}.roger-header .roger-avatar{width:56px;height:56px}.roger-header h2{font-size:23px;letter-spacing:-.02em;margin:0;color:#edf5f5}.roger-header span{font-size:12px;color:#b1ccd0}
+.roger-close{margin-left:auto;background:transparent;border:0;font-size:26px;min-width:44px;min-height:44px;color:#d3e7ea;padding:4px}
+.roger-context{padding:9px 16px;font-size:11px;color:#b1ccd0;border-bottom:1px solid #2d404c;display:flex;align-items:center;gap:8px}.roger-dot{width:6px;height:6px;border-radius:50%;background:#9cdcc8}
+.roger-conversation{flex:1;min-height:100px;overflow-y:auto;overscroll-behavior:contain;padding:18px 16px;scrollbar-width:thin;scrollbar-color:#506e7b transparent}
+.roger-welcome h3{font-size:21px;line-height:1.3;margin:2px 0 10px;color:#e5f5f0}.roger-welcome p{font-size:14px;line-height:1.6;color:#b6c9d0}.roger-welcome p:last-child{font-size:12px}
+.roger-message{margin-bottom:18px}.roger-message.user{padding:12px;background:#263b49;border-radius:10px 10px 2px 10px;margin-left:28px}.roger-message p{white-space:pre-wrap;overflow-wrap:anywhere;font-size:14px;line-height:1.65;color:#e1ebef;margin:6px 0 0}.roger-message-label{display:flex;justify-content:space-between;gap:8px;color:#9fd5c9;font-size:11px;font-weight:600}.roger-message-label span{color:#9fb2bc;font-weight:400}
+.roger-sources{font-size:11px;color:#a8bdc4;border-top:1px solid #304653;margin-top:12px;padding-top:8px}.roger-sources a{display:block;color:#a8d1ef;margin-top:5px;line-height:1.5}
+.roger-thinking{font-size:13px;color:#a3e6d2}.roger-error{padding:10px;border:1px solid #8d7250;border-radius:6px}.roger-error p{color:#e5c89e;font-size:13px}.roger-error button{background:#283b48;color:#e1ebef}
+.roger-questions{display:flex;flex-wrap:wrap;gap:6px;padding:8px 14px;border-top:1px solid #2d404c}.roger-questions button{font-size:11px;min-height:34px;border-radius:18px;padding:6px 10px;background:#1e303b;border-color:#3c5563;color:#cfe3e7;white-space:normal}
+.roger-form{display:flex;align-items:center;gap:8px;padding:4px 14px 10px}.roger-form textarea{resize:none;flex:1;min-width:0;border:1px solid #4d6875;border-radius:8px;background:#0f1922;color:#edf5f5;font:14px/1.5 Barlow,system-ui,sans-serif;padding:10px;max-height:100px}.roger-form textarea::placeholder{color:#94adb8}.roger-form button{height:44px;width:44px;flex-shrink:0;background:#9bdacb;border:0;color:#10272b;font-size:25px;border-radius:50%}
+.roger-footer{display:flex;align-items:center;gap:8px;padding:0 14px 12px;font-size:10px;line-height:1.5;color:#a8bac2}.roger-footer button{margin-left:auto;font-size:11px;min-height:34px;padding:5px 8px;background:transparent;color:#bfd5dc;border:0}
+main>footer{padding-bottom:80px}
+@media(max-width:600px){.roger-companion{right:12px;bottom:max(12px,env(safe-area-inset-bottom))}.roger-launcher{height:56px}.roger-launcher .roger-avatar{width:60px;height:60px}.roger-panel{position:fixed;inset:auto 10px calc(82px + env(safe-area-inset-bottom));width:auto;height:min(620px,calc(100dvh - 110px));margin:0;border-radius:14px}.roger-questions button{min-height:44px;font-size:12px}.roger-footer button{min-height:44px}}
+@media(prefers-reduced-motion:reduce){.roger-body,.roger-eyes{animation:none}}
+[data-motion=reduced] .roger-body,[data-motion=reduced] .roger-eyes{animation:none}
+@media print{.roger-companion{display:none}}

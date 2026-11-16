@@ -24,6 +24,7 @@ export function Workbench({lab = false}: {lab?: boolean}) {
   const [heat, setHeat] = useState(true)
   const [coverage, setCoverage] = useState(lab)
   const [hidden, hide] = useState(false)
+  useEffect(()=>{set({masked:hidden});return()=>{set({masked:false})}},[hidden,set])
   const [instrument, setInstrument] = useState<'cabin' | 'local'>('cabin')
   const masked = hidden || instrument === 'cabin'
   const [status, setStatus] = useState('')
