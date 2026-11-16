@@ -66,7 +66,7 @@ export function Roger() {
       </div>
       <div className="roger-questions">{questions.map(question=><button key={question} disabled={busy} onClick={()=>void ask(question)}>{question}</button>)}</div>
       <form onSubmit={submit} className="roger-form"><label className="sr-only" htmlFor="roger-question">Ask Roger</label><textarea ref={input} id="roger-question" rows={2} maxLength={1200} value={draft} onChange={e=>setDraft(e.target.value)} placeholder="Ask about your experiment…" onKeyDown={e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();if(draft.trim())void ask(draft.trim())}}}/><button type="submit" disabled={busy||!draft.trim()} aria-label="Send question to Roger">↑</button></form>
-      <div className="roger-footer"><span>AI-generated, may be inaccurate. Not NASA-affiliated.<br/>Question + run summary sent to Google Gemini.</span><button disabled={busy||!messages.length} onClick={()=>{setMessages([]);setError('');input.current?.focus()}}>Clear</button></div>
+      <div className="roger-footer"><span>AI-generated, may be inaccurate. Not NASA-affiliated.<br/>Question + run summary sent to Google Gemini, or Mistral as backup.</span><button disabled={busy||!messages.length} onClick={()=>{setMessages([]);setError('');input.current?.focus()}}>Clear</button></div>
     </section>}
     <button ref={launcher} className="roger-launcher" aria-label={open?'Close Roger AI guide':'Ask Roger AI guide'} aria-expanded={open} onClick={()=>open?close():setOpen(true)}><RogerAvatar busy={busy}/><span><strong>Ask Roger</strong><small>AI lab partner</small></span><span className="roger-launch-arrow" aria-hidden="true">{open?'×':'↗'}</span></button>
   </div>

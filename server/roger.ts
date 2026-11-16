@@ -43,13 +43,37 @@ Reference directory: ${JSON.stringify(rogerSources)}`
 export async function askGemini(input:RogerInput,key:string,model='gemini-3.1-flash-lite',fetcher:typeof fetch=fetch) {
   if(!/^[a-zA-Z0-9.-]+$/.test(model))throw new Error('Invalid model configuration')
   const response=await fetcher(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,{
-    method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':key},signal:AbortSignal.timeout(45000),
+    method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':key},signal:AbortSignal.timeout(20000),
     body:JSON.stringify({systemInstruction:{parts:[{text:instructions}]},contents:[{role:'user',parts:[{text:JSON.stringify({model:'Open-cabin two-compartment simulation. localPpm = open cabin air near the face, NOT a suit atmosphere.',...input})}]}],generationConfig:{temperature:.3,maxOutputTokens:800,responseMimeType:'application/json'}}),
   })
   if(!response.ok)throw new Error(response.status===429?'RATE_LIMIT':'PROVIDER_'+response.status)
   const data=await response.json()
   const text=data.candidates?.[0]?.content?.parts?.filter((p:{thought?:boolean;text?:string})=>!p.thought).map((p:{text?:string})=>p.text??'').join('')
-  const reply=JSON.parse(text??'{}')
+  return parseReply(text)
+}
+function parseReply(text:unknown) {
+  const reply=JSON.parse(typeof text==='string'?text:'{}')
   if(typeof reply.answer!=='string'||!reply.answer.trim())throw new Error('EMPTY_REPLY')
   return {answer:reply.answer.slice(0,6000),sources:rogerSources.filter(source=>Array.isArray(reply.sourceIds)&&reply.sourceIds.includes(source.id)).map(({id,title,url})=>({id,title,url}))}
+}
+
+
+// Same evidence constraints, redacted context and response allowlist for both providers.
+export async function askMistral(input:RogerInput,key:string,model='mistral-small-latest',fetcher:typeof fetch=fetch) {
+  if(!/^[a-zA-Z0-9.-]+$/.test(model))throw new Error('Invalid model configuration')
+  const response=await fetcher('https://api.mistral.ai/v1/chat/completions',{
+    method:'POST',headers:{'Content-Type':'application/json',Authorization:`Bearer ${key}`},signal:AbortSignal.timeout(20000),
+    body:JSON.stringify({model,messages:[{role:'system',content:instructions},{role:'user',content:JSON.stringify(input)}],temperature:.3,max_tokens:800,response_format:{type:'json_object'}}),
+  })
+  if(!response.ok)throw new Error(response.status===429?'RATE_LIMIT':'PROVIDER_'+response.status)
+  const data=await response.json()
+  return parseReply(data.choices?.[0]?.message?.content)
+}
+export async function askRoger(input:RogerInput,config:{geminiKey?:string;mistralKey?:string;geminiModel?:string;mistralModel?:string},fetcher:typeof fetch=fetch) {
+  if(config.geminiKey) {
+    try { return await askGemini(input,config.geminiKey,config.geminiModel,fetcher) }
+    catch(error) { if(!config.mistralKey) throw error }
+  }
+  if(config.mistralKey)return askMistral(input,config.mistralKey,config.mistralModel,fetcher)
+  throw new Error('NOT_CONFIGURED')
 }
