@@ -6,8 +6,6 @@ export function AboutPage() {
       <p>A cabin sensor can report a lower concentration than a poorly mixed breathing zone. CALYPSO lets a judge compare the two readings, move the virtual sensor, and replay the same simulated samples.</p>
       <h2>What you can reproduce</h2>
       <p>The guided run compares two sensor locations with identical model settings. Download the data or save both runs and open them in Experiments.</p>
-      <h2>Team</h2>
-      <p>TODO: Add team member names, roles, and the registered competition event.</p>
       <h2>Credits</h2><p>CALYPSO’s design and development used AI assistance. The archived astronaut illustration is labeled as AI-generated.</p>
       <h2>Roadmap</h2>
       <p>Compare the simplified model against a documented chamber experiment and report agreement and uncertainty across operating conditions.</p>

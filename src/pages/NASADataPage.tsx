@@ -52,6 +52,16 @@ export function NASADataPage() {
   }).sort((a,b) => a.t - b.t), [data, timestamp, active])
   const imperial = usePreferences()?.preferences.units === 'Imperial' && metric === 'Temperature'
   const unit = imperial ? '°F' : units[metric][0]
+  const summary = useMemo(() => active.map((column,index) => {
+    let count = 0, sum = 0, min = Infinity, max = -Infinity
+    for (const row of observations) {
+      const value = row['series'+index]
+      if (value == null) continue
+      count++; sum += value; min = Math.min(min,value); max = Math.max(max,value)
+    }
+    return {column,count,min,max,mean:sum/count}
+  }), [active,observations])
+  const display = (value:number) => (imperial ? value*9/5+32 : value).toLocaleString(undefined,{maximumSignificantDigits:6})+' '+unit
   const first = Math.min(start, Math.max(0, observations.length - windowSize))
   const rr1Cadence = name === 'RR-1_EDA_Telemetry_table.csv' && timestamp === 'Controller_Time_GMT'
   const gapCount = rr1Cadence ? observations.filter((row,i)=>i > 0 && row.t-observations[i-1].t > 300_000).length : 0
@@ -71,7 +81,7 @@ export function NASADataPage() {
     {error && <p role="alert" className="notice">{error}</p>}
     {data && <>
       <section className="panel section">
-        <div className="section-title"><h2>Environmental measurements</h2><select aria-label="Measurement" value={metric} onChange={e=>useData.setState({metric:e.target.value as Metric})}>{Object.keys(units).map(m=><option key={m}>{m}</option>)}</select></div>
+        <div className="section-title"><h2>Environmental measurements</h2><select aria-label="Measurement" value={metric} onChange={e=>useData.setState({metric:e.target.value as Metric})}>{Object.keys(units).filter(m=>m===metric || columns.some(c=>c.metric===m && c.unit)).map(m=><option key={m}>{m}</option>)}</select></div>
         <p>{usable.toLocaleString()} usable {metric} rows of {data.rows.length.toLocaleString()} original rows · {(data.rows.length - observations.length).toLocaleString()} invalid timestamps{rr1Cadence && ' · '+gapCount.toLocaleString()+' intervals longer than 5 min'}</p>
         <p>{name.startsWith('RR-1_') ? 'RR-1 · experiment environmental telemetry' : data.mission ? 'Mission field · ' + (data.rows[0]?.[data.mission] || 'unspecified') : 'Mission unspecified'}{data.location && ' · ' + (data.rows[0]?.[data.location] || 'location unspecified')}. Context is determined from the export and header labels. These readings describe the measured experiment environment.</p>
         {usable ? <><div className="legend">{active.map((c,i)=><span key={c.header} style={{color:colors[i % colors.length]}}>{c.location} · {c.header} ({observations.filter(row=>row['series'+i] !== null).length.toLocaleString()})</span>)}</div>
@@ -82,13 +92,19 @@ export function NASADataPage() {
           <label>Rows per window <select value={windowSize} onChange={e=>setWindowSize(+e.target.value)}>{[200,1000,3000].map(n=><option key={n}>{n}</option>)}</select></label>
           <p>{timestamp && observations.length > 0 && <>Source range · {new Date(observations[0].t).toISOString()} to {new Date(observations[observations.length-1].t).toISOString()}<br/></>}Horizontal axis · {timestamp ? 'UTC (offset-free timestamps treated as UTC)' : 'source row index'} · Vertical axis · {unit}</p></> : <p>No usable observations for this measurement. Review the column mapping and units below.</p>}
       </section>
-      <details className="panel section"><summary>Measurement completeness</summary>
-        <ul>{active.map((column,index)=>{
-          const count=observations.filter(row=>row['series'+index] !== null).length
-          return <li key={column.header}>{column.location} · {column.header} · {count.toLocaleString()} available · {(observations.length-count).toLocaleString()} missing or invalid among rows with valid timestamps</li>
-        })}</ul>
+      <details className="panel section"><summary>Measurement summary and completeness</summary>
+        <p>Statistics cover all valid samples for the selected measurement. The mean weights each sample equally.</p>
+        {summary.map(({column,count,min,max,mean})=><section key={column.header}>
+          <h3>{column.location} · {column.header}</h3>
+          <div className="stats">
+            <div>Samples <b>{count.toLocaleString()}</b></div>
+            <div>Missing or invalid <b>{(observations.length-count).toLocaleString()}</b></div>
+            {count > 0 && <><div>Minimum <b>{display(min)}</b></div><div>Mean <b>{display(mean)}</b></div><div>Maximum <b>{display(max)}</b></div></>}
+          </div>
+        </section>)}
       </details>
       <details className="panel section" open={!usable}><summary>Column mapping and units</summary>
+        <p>RR-1 includes CO₂, temperature and humidity. To chart another measurement, import a CSV with that column, then select its measurement and unit below.</p>
         <label className="field">Timestamp<select value={timestamp} onChange={e=>useData.setState({timestamp:e.target.value})}><option value="">Use source row index</option>{data.headers.map(h=><option key={h}>{h}</option>)}</select></label>
         {data.headers.filter(h=>h!==timestamp).map(h => {
           const c = columns.find(column=>column.header===h)

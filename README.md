@@ -1,49 +1,37 @@
 # CALYPSO
 
-Crew Air & Life-support Yield Prediction and Sensor Observatory
+**A spacecraft cabin CO₂ simulator and sensor placement workbench.** CALYPSO asks whether a cabin sensor can miss CO₂ building up in the air near an astronaut’s face. Move a virtual sensor and compare both placements against the same modeled conditions.
 
-A browser-based educational research prototype for investigating how localized CO₂ can differ from cabin averages and how sensor placement affects detection.
+**[Open CALYPSO](https://calypso-tan.vercel.app/)** · **[Start the guided demo](https://calypso-tan.vercel.app/#/simulation)** · **[Presenter script](research/demo.md)**
 
-## Run locally
+## Reproduce the result in about one minute
 
-Use Node.js 22.12 or later.
+1. In **Simulation**, select **Start 60-second demo**. It opens a 300-second reduced-ventilation run with one cabin sensor.
+2. Select **Reveal modeled breathing zone**. The local concentration first crosses the 1,250 ppm experiment rule at **36 s**. The cabin sensor never crosses it in this run.
+3. Select **Move S1 to the breathing zone**. The same sensor now detects the crossing at **36 s**. Ventilation, activity, removal, and the simulated samples stay fixed.
+4. Select **Download comparison data** for the settings, sampled readings, and results, or **Save comparison runs** to reopen both placements in **Experiments**.
+
+## What judges can inspect
+
+- **Cabin Simulation and Sensor Lab** let you change ventilation, CO₂ removal, activity, and sensor position. The measurement catalog calculates ten statistics for each of ten model signals.
+- **NASA Data** charts measured CO₂, temperature, and relative humidity for RR-1 ISS and ground-control observations. [Dataset provenance and import notes](public/data/README.md)
+- **Research** gives the equations and the role of each source. The illustrative two-compartment model exchanges CO₂ between cabin air and the breathing zone and removes CO₂ from the cabin. The 1,250 ppm line is an experiment rule. The demo does not establish an astronaut safety limit or validate the model against ISS airflow measurements. [Model and equations](research/evidence.md)
+- **Crew Health and Crew Nutrition** add a NASA-sourced body map and a mission-day nutrition log with food-source notes. The log totals values entered by the user. Organ effects are explained through research.
+- **Roger** is an optional Gemini-powered AI guide for the latest main-workbench run. The app identifies AI assistance, and Roger has no NASA affiliation. The core experiment and exports run independently of Gemini.
+
+## Run and verify locally
+
+Use Node.js 22.12 or later. Install dependencies and open the local URL printed by Vite.
 
 ```sh
 npm install
 npm run dev
-npm run test
-npm run build
 ```
 
-Open the local URL printed by Vite. The dev server opens the cabin simulation.
+Run `npm run test` for the regression suite and `npm run build` for the production build. CALYPSO uses React, TypeScript, Vite, and a deterministic simulation engine. Saved runs and nutrition entries are stored in the browser.
 
-## Five-minute demo
+## Hosting and credits
 
-1. Open **Sensor Lab**, start the masked exercise, and run 300 seconds with the cabin-only layout.
-2. Reveal the modeled zone. Compare first crossings and mean absolute error.
-3. Switch to **Cabin + breathing zone** or drag a sensor into the dashed zone. Observe how detection changes over the same run. Add simulated noise to see measurement error.
-4. Save the experiment. Repeat with routine ventilation, save again, and compare the two records in **Experiments**. **Reports** exports JSON or prints to PDF.
-5. Open **NASA Data** and switch among CO₂, temperature, and relative humidity to examine paired RR-1 ISS and ground-control observations.
+Vercel builds with `npm run build` and serves `dist`. To enable Roger, set `GEMINI_API_KEY` as a server-side environment variable. `GEMINI_MODEL` optionally overrides the default Gemini model. On requests to Roger, the app sends the question, recent chat, and a bounded run summary to Gemini. Masked breathing-zone values are withheld.
 
-## Data
-
-The supplied RR-1 CSV is bundled unchanged at `public/data/nasa-iss-telemetry.csv`. Replace that file to change the default dataset. For a temporary import, use **NASA Data → Browse CSV** or drop a CSV onto the import panel. See [data documentation](public/data/README.md) for provenance and supported mappings.
-
-## Model and implementation
-
-The deterministic simulator uses two well-mixed effective volumes with a local CO₂ source, symmetric exchange, and cabin removal. It assumes constant pressure and equal air density for the two compartments. Volumes, rates, the concentration overlay, and the demonstration threshold are illustrative. See the [equations and evidence](research/evidence.md).
-
-Implemented features include seven views, three deterministic presets, parameter controls, a model clock, animated qualitative airflow, a schematic CO₂ overlay, movable sensors with keyboard alternatives, a masked investigation, two candidate layouts, deterministic noise, detection statistics, CSV mapping and charting, local experiment snapshots, replay and comparison, ventilation sensitivity, a fictional observation log, evidence search, deterministic interpretation, and JSON and printable reporting.
-
-Future capabilities include a dedicated helmet washout model, cross-mission overlay, broader sensor-layout search, and additional geometry or environmental modes. The app uses a deterministic explainer. It requires no API keys or server.
-
-## Deploy to Vercel
-
-Push the project to a Git repository, import it in Vercel, and select the **Vite** framework preset. Use the repository root, `npm run build` as the build command, and `dist` as the output directory. There are no environment variables. The routes use URL hashes. Vite copies the contents of `public` into the production bundle. [Vercel Vite setup](https://vercel.com/docs/frameworks/frontend/vite)
-
-### Roger, the AI lab partner
-Roger is an optional alien assistant, not affiliated with NASA. He explains a snapshot of the latest main-workbench run using Gemini and a curated NASA reference directory. He cannot control the simulation or inspect the separate guided demo, imported CSV contents, or saved reports. Source links describe supporting references; they are not live retrieval or proof of model validation. Masked exercises exclude local results and previous chat from API requests.
-
-Set `GEMINI_API_KEY` as a **server-side** Vercel environment variable for Production and Preview, then redeploy. Optional `GEMINI_MODEL` defaults to `gemini-3.1-flash-lite`. Never use a `VITE_` prefix or commit a key. For local development, launch Vite with these variables provided securely by your shell; `.env.example` documents the names (Vite does not automatically expose `.env` entries to this server handler).
-
-`/api/roger` accepts bounded POST requests, uses a 45-second upstream timeout, returns curated source links only, and sends no raw provider errors or credentials to the browser. Limits are 10 requests per IP and 60 total per minute **per server instance**, not a durable global quota. Configure Google project quotas/budgets and Vercel firewall rate limits for a public launch; distributed instances can exceed these local limits. Chat stays in tab memory, but questions, recent conversation, and a run summary are sent to Google when asking Roger. No API requests occur merely by opening the panel. The simulator remains usable if AI is unavailable.
+See [data credits](public/data/README.md), [illustration credits](public/images/ATTRIBUTION.md), and [audio credits](public/audio/ATTRIBUTION.txt). Design and development used AI assistance.

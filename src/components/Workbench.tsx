@@ -1,3 +1,4 @@
+import { MeasurementCatalog } from './MeasurementCatalog'
 import { ModelEvidence } from './ModelEvidence'
 import { useScenarioSolver } from '../simulation/useScenarioSolver'
 import { download, downloadChart } from '../lib/chartDownloads'
@@ -32,6 +33,11 @@ export function Workbench({lab = false}: {lab?: boolean}) {
   const [sharedLink, setSharedLink] = useState('')
   const chart = useRef<HTMLElement>(null)
   const viewport = useRef<HTMLElement>(null)
+  const ventilationInput = useRef<HTMLInputElement>(null)
+  function editCustom() {
+    set({scenario:'Custom'})
+    ventilationInput.current?.focus()
+  }
   const [controlsOpen, setControlsOpen] = useState(()=>typeof matchMedia === 'undefined' || !matchMedia('(max-width:600px)').matches)
   useEffect(()=>{
     if (lab) return
@@ -79,6 +85,28 @@ export function Workbench({lab = false}: {lab?: boolean}) {
     if (sample.local < threshold && previous.local < threshold) return total
     return total + (sample.t - previous.t) * (Math.max(sample.local, previous.local) - threshold) / Math.abs(sample.local - previous.local)
   }, 0)
+  const runSummary = useMemo(() => {
+    const first = s.points[0] ?? initial
+    const last = s.points.at(-1) ?? initial
+    let cabinMin = first.cabin, cabinMax = first.cabin, cabinIntegral = 0
+    let localMin = first.local, localIntegral = 0, maxGap = first.local - first.cabin
+    for (const [index, sample] of s.points.entries()) {
+      cabinMin = Math.min(cabinMin,sample.cabin)
+      cabinMax = Math.max(cabinMax,sample.cabin)
+      localMin = Math.min(localMin,sample.local)
+      maxGap = Math.max(maxGap,sample.local-sample.cabin)
+      const previous = s.points[index-1]
+      if (!previous) continue
+      const duration = sample.t-previous.t
+      cabinIntegral += duration*(sample.cabin+previous.cabin)/2
+      localIntegral += duration*(sample.local+previous.local)/2
+    }
+    const duration = last.t-first.t
+    return {duration,cabinMin,cabinMax,localMin,maxGap,
+      cabinMean:duration>0 ? cabinIntegral/duration : first.cabin,
+      localMean:duration>0 ? localIntegral/duration : first.local,
+      cabinChange:last.cabin-first.cabin,localChange:last.local-first.local}
+  }, [s.points])
   const metrics = detect(s.points,s.sensors,s.noise)
   const candidates = lab && !hidden ? [
     { name:'Cabin-only layout', error:detect(s.points,[cabinSensor],s.noise).meanError },
@@ -108,9 +136,13 @@ export function Workbench({lab = false}: {lab?: boolean}) {
         <summary>Experiment controls</summary>
 
         <div className="panel-pad">
-          <label className="field">Scenario<select value={s.scenario in presets ? s.scenario : 'Custom'} onChange={e=>{const preset=e.target.value;if(preset==='Custom')set({scenario:'Custom'});else s.select(preset as keyof typeof presets)}}>{Object.keys(presets).map(name=><option key={name}>{name}</option>)}<option value="Custom">{s.scenario in presets || s.scenario==='Custom' ? 'Custom' : s.scenario}</option></select></label>
+          <label className="field">Scenario<select value={s.scenario in presets ? s.scenario : 'Custom'} onChange={e=>{const preset=e.target.value;if(preset==='Custom')editCustom();else s.select(preset as keyof typeof presets)}}>{Object.keys(presets).map(name=><option key={name}>{name}</option>)}<option value="Custom">{s.scenario in presets || s.scenario==='Custom' ? 'Custom' : s.scenario}</option></select></label>
+          {!(s.scenario in presets) && <div className="custom-settings">
+            <p>Custom starts with the current settings. Changing a value pauses the run and resets its clock. Select Run 300 s to test your settings.</p>
+            <button type="button" onClick={editCustom}>Edit custom settings</button>
+          </div>}
           <div className="subheading">MODEL PARAMETERS</div>
-          <label className="range-label"><span>Ventilation <b>{fmt(s.settings.ventilation*100)}%</b></span><input title="Air mixing strength. Baseline: 65%." type="range" min="0" max="100" value={s.settings.ventilation*100} onChange={e=>settings('ventilation',+e.target.value/100)}/></label>
+          <label className="range-label"><span>Ventilation <b>{fmt(s.settings.ventilation*100)}%</b></span><input ref={ventilationInput} title="Air mixing strength. Baseline: 65%." type="range" min="0" max="100" value={s.settings.ventilation*100} onChange={e=>settings('ventilation',+e.target.value/100)}/></label>
           <label className="range-label"><span>CO₂ removal <b>{fmt(s.settings.scrubber*100)}%</b></span><input title="Cabin CO₂ removal strength. Baseline: 65%." type="range" min="0" max="100" value={s.settings.scrubber*100} onChange={e=>settings('scrubber',+e.target.value/100)}/></label>
           <label className="range-label"><span>Relative activity <b>{s.settings.activity.toFixed(1)}×</b></span><input title="CO₂ production relative to resting activity. Baseline: 1×." type="range" min="0" max="3" step=".1" value={s.settings.activity} onChange={e=>settings('activity',+e.target.value)}/></label>
           <button onClick={()=>{s.select('Baseline');setStatus('Baseline parameters restored.')}}>Reset parameters</button>
@@ -193,6 +225,38 @@ export function Workbench({lab = false}: {lab?: boolean}) {
         <span className="sr-only" role="status">{!s.running && !hidden ? `Paused at ${point.t} seconds. Local CO₂ ${fmt(point.local)} ppm.` : ''}</span>
       </div>
     </section>
+    <MeasurementCatalog points={s.points} sensors={s.sensors} noise={s.noise} masked={hidden}/>
+    <details className="panel section">
+      <summary>Run measurements</summary>
+      <p><a href="#/crew-health">Explore how spaceflight affects the body ↗</a></p>
+      <p>Modeled results for the full recorded run. Means are weighted by elapsed time. Minimum and maximum use the recorded samples.</p>
+      <h3>Run and settings</h3>
+      <div className="stats">
+        <div>Duration <b>{runSummary.duration} s</b></div>
+        <div>Recorded samples <b>{s.points.length.toLocaleString()}</b></div>
+        <div>Ventilation setting <b>{fmt(100*s.settings.ventilation)}%</b></div>
+        <div>CO₂ removal setting <b>{fmt(100*s.settings.scrubber)}%</b></div>
+        <div>Crew activity <b>{s.settings.activity}×</b></div>
+        <div>Sensor noise amplitude <b>{s.noise} ppm</b></div>
+      </div>
+      <h3>Cabin CO₂</h3>
+      <div className="stats">
+        <div>Minimum <b>{fmt(runSummary.cabinMin)} ppm</b></div>
+        <div>Mean <b>{fmt(runSummary.cabinMean)} ppm</b></div>
+        <div>Maximum <b>{fmt(runSummary.cabinMax)} ppm</b></div>
+        <div>Change from start <b>{fmt(runSummary.cabinChange)} ppm</b></div>
+      </div>
+      {!hidden && <>
+        <h3>Breathing-zone CO₂</h3>
+        <div className="stats">
+          <div>Minimum <b>{fmt(runSummary.localMin)} ppm</b></div>
+          <div>Mean <b>{fmt(runSummary.localMean)} ppm</b></div>
+          <div>Maximum <b>{fmt(peak)} ppm</b></div>
+          <div>Change from start <b>{fmt(runSummary.localChange)} ppm</b></div>
+          <div>Largest local − cabin gap <b>{fmt(runSummary.maxGap)} ppm</b></div>
+        </div>
+      </>}
+    </details>
     <details className="panel section" open><summary>{lab ? "Sensor placement and detection" : "Detection events"}</summary>
       <div className="section-title"><h2>{lab ? 'Sensor placement' : 'Detection events'}</h2>{lab && <button onClick={()=>{if(!hidden) {s.select('Reduced ventilation'); set({sensors:[cabinSensor]})} hide(!hidden); setInstrument(hidden ? 'local' : 'cabin')}}>{hidden ? <Eye size={16}/> : <EyeOff size={16}/>} {hidden?'Reveal modeled zone':'Start masked exercise'}</button>}</div>
       <p>First sample at or above {threshold.toLocaleString()} ppm triggers an educational alert. Layout and noise changes are evaluated against the entire recorded run.</p>

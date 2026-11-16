@@ -14,3 +14,9 @@ it('validates and converts units before charting',()=>{
   expect(measurement('2',{header:'c',metric:'CO₂',unit:'',location:''})).toBeNull()
   expect(()=>parseCsv('unsupported')).toThrow()
 })
+
+it('normalizes mapped pressure and air speed while rejecting impossible oxygen fractions', () => {
+  expect(measurement('101325', {header:'pressure', metric:'Pressure', unit:'Pa', location:''})).toBeCloseTo(101.325)
+  expect(measurement('25', {header:'air speed', metric:'Air speed', unit:'cm/s', location:''})).toBeCloseTo(.25)
+  expect(measurement('1.1', {header:'oxygen', metric:'Oxygen', unit:'fraction', location:''})).toBeNull()
+})

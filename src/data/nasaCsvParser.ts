@@ -1,7 +1,13 @@
 import Papa from 'papaparse'
-export type Metric = 'CO₂' | 'Temperature' | 'Humidity'
-export type Unit = 'ppm' | 'ppb' | '°C' | '°F' | '%' | 'fraction'
-export const units: Record<Metric, Unit[]> = { 'CO₂': ['ppm', 'ppb'], Temperature: ['°C', '°F'], Humidity: ['%', 'fraction'] }
+export const units = {
+  'CO₂': ['ppm', 'ppb'], Temperature: ['°C', '°F'], Humidity: ['%', 'fraction'],
+  Oxygen: ['%', 'fraction'], Pressure: ['kPa', 'Pa', 'hPa', 'mmHg'],
+  'Air speed': ['m/s', 'cm/s'], 'Carbon monoxide': ['ppm', 'ppb'],
+  'Particulate matter': ['µg/m³'], 'Sound level': ['dBA'], 'Light level': ['lux'],
+  'Radiation dose rate': ['µSv/h'], 'Power': ['W', 'kW'],
+} as const
+export type Metric = keyof typeof units
+export type Unit = (typeof units)[Metric][number]
 export type Column = { header: string; metric: Metric; unit: Unit | ''; location: string }
 export function parseCsv(text: string) {
   const parsed = Papa.parse<Record<string, string>>(text, { header: true, skipEmptyLines: 'greedy', transformHeader: h => h.trim() })
@@ -18,10 +24,16 @@ export function parseCsv(text: string) {
   return { headers, rows: parsed.data, columns, time: headers.find(h => /date|time/.test(h.toLowerCase())) ?? '', mission: headers.find(h => /mission/.test(h.toLowerCase())) ?? '', location: headers.find(h => /location|site/.test(h.toLowerCase())) ?? '' }
 }
 export function measurement(value: string | undefined, column: Column) {
-  if (!value?.trim() || !column.unit || !units[column.metric].includes(column.unit)) return null
+  if (!value?.trim() || !column.unit || !(units[column.metric] as readonly Unit[]).includes(column.unit)) return null
   const n = Number(value)
   if (!Number.isFinite(n)) return null
-  const converted = column.unit === 'ppb' ? n / 1000 : column.unit === '°F' ? (n - 32) * 5 / 9 : column.unit === 'fraction' ? n * 100 : n
-  if ((column.metric !== 'Temperature' && converted < 0) || (column.metric === 'Humidity' && converted > 100) || (column.metric === 'CO₂' && converted > 1e6) || (column.metric === 'Temperature' && converted < -273.15)) return null
+  const factors: Partial<Record<Unit, number>> = { ppb:.001, fraction:100, Pa:.001, hPa:.1, mmHg:.133322387, 'cm/s':.01, kW:1000 }
+  const converted = column.unit === '°F' ? (n - 32) * 5 / 9 : n * (factors[column.unit] ?? 1)
+  if (!Number.isFinite(converted)) return null
+  if (column.metric === 'Temperature') return converted >= -273.15 ? converted : null
+  if (column.metric === 'Sound level') return converted
+  if (converted < 0) return null
+  if (['Humidity','Oxygen'].includes(column.metric) && converted > 100) return null
+  if (['CO₂','Carbon monoxide'].includes(column.metric) && converted > 1e6) return null
   return converted
 }

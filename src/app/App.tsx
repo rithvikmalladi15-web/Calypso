@@ -1,3 +1,6 @@
+import { guidedCabinResult, guidedLocalResult, guidedPoints } from '../simulation/guidedScenario'
+import { NutritionPage } from '../pages/NutritionPage'
+import { CrewHealthPage } from '../pages/CrewHealthPage'
 import { Roger } from '../components/Roger'
 import { AboutPage } from '../pages/AboutPage'
 import { WorkspaceClock } from '../components/WorkspaceClock'
@@ -7,59 +10,50 @@ import { CabinDiagram } from '../components/CabinDiagram'
 import { cabinSensor } from '../simulation/sensorModel'
 import { initial } from '../simulation/engine'
 import { GuidedDemo } from '../components/GuidedDemo'
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
 import { Orbit } from 'lucide-react'
 import { Workbench } from '../components/Workbench'
 import { NASADataPage } from '../pages/NASADataPage'
 import { ResearchPage } from '../pages/ResearchPage'
 import { ExperimentsPage } from '../pages/ExperimentsPage'
-import { loadDefault } from '../data/nasaDataLoader'
 import { presets } from '../simulation/engine'
-import { detect } from '../simulation/sensorModel'
 import { useSim } from '../stores/simulationStore'
-import { useData } from '../stores/dataStore'
 import { routeHref, useRoute, type Route } from './router'
 
 const navigation: {label: string; pages: Route[]}[] = [
-  {label:'Workbench', pages:['Overview','Simulation','Sensor Lab']},
+  {label:'Workbench', pages:['Overview','Simulation','Sensor Lab','Crew Health','Crew Nutrition']},
   {label:'Data sources', pages:['NASA Data','Research','About']},
   {label:'Analytics', pages:['Experiments','Reports']},
 ]
 
 function Overview() {
-  const state=useSim()
-  const imported=useData(s=>s.data)
-  const [availability,setAvailability]=useState('Checking…')
-  const last=state.points[state.points.length-1]
-  const metrics=detect(state.points,state.sensors,state.noise)
-  useEffect(()=>{
-    const request=new AbortController()
-    loadDefault(request.signal).then(d=>setAvailability(d?d.dataset.rows.length.toLocaleString()+' source rows':'Import available')).catch(()=>{if(!request.signal.aborted)setAvailability('See NASA Data for details')})
-    return ()=>request.abort()
-  },[])
+  const duration = guidedPoints.at(-1)!.t
+  const alertTime = (time:number | undefined) => time===undefined ? 'No alert' : time+' s'
   return <>
     <section className="overview-hero" aria-labelledby="overview-title">
       <div className="overview-hero-copy">
         <h1 id="overview-title">A cabin sensor can miss CO₂ building up around an astronaut.</h1>
         <p>Run a short experiment to see what changes when you move one CO₂ sensor from the cabin to the astronaut’s breathing zone.</p>
         <div className="overview-hero-actions">
-          <a className="button primary" href={routeHref('Simulation')}>Launch workbench</a>
+          <a className="button primary" href={routeHref('Simulation')}>Open the guided demo</a>
           <a className="button" href={routeHref('Research')}>See sources and methods</a>
         </div>
         <p className="overview-evidence">The Research page lists the NASA sources, what each was used for, and which assumptions belong to the simulation.</p>
       </div>
       <figure className="overview-hero-preview">
-        <CabinDiagram point={initial} sensors={[cabinSensor]} ventilation={presets['Reduced ventilation'].ventilation} airflow heat={false} coverage={false} hidden playing={true}/>
+        <CabinDiagram point={initial} sensors={[cabinSensor]} ventilation={presets['Reduced ventilation'].ventilation} airflow heat={false} coverage={false} hidden playing={false}/>
         <figcaption>Starting layout · One sensor in the cabin</figcaption>
       </figure>
     </section>
-    <section className="panel section overview-how">
-      <h2>How it works</h2>
-      <ol>
-        <li>Run the reduced-ventilation scenario with one cabin sensor.</li>
-        <li>Reveal the modeled breathing zone and find its first crossing.</li>
-        <li>Move the sensor and compare both placements on the same run.</li>
-      </ol>
+    <section className="panel section overview-how" aria-labelledby="overview-result">
+      <h2 id="overview-result">One run, two sensor placements</h2>
+      <p>In the {duration}-second reduced-ventilation demo, the two sensors are evaluated against identical simulated air conditions.</p>
+      <dl className="submission-results">
+        <div><dt>Breathing zone crosses</dt><dd>{alertTime(guidedCabinResult.truth)}</dd></div>
+        <div><dt>Cabin placement alerts</dt><dd>{alertTime(guidedCabinResult.alert)}</dd></div>
+        <div><dt>Breathing-zone placement alerts</dt><dd>{alertTime(guidedLocalResult.alert)}</dd></div>
+      </dl>
+      <p>These times use the 1,250 ppm demonstration rule. The demo lets you reproduce the comparison and download its source samples.</p>
     </section>
     <section className="overview-paths" aria-label="Ways to explore CALYPSO">
       <article>
@@ -78,9 +72,10 @@ function Overview() {
       <p>A cabin reading can hide a local change in air quality. We built CALYPSO so students and judges can investigate where a CO₂ sensor would detect that change and see the assumptions behind the result.</p>
       <ul><li>See why cabin and local CO₂ can differ.</li><li>Compare placement with the underlying run held fixed.</li><li>Use NASA RR-1 observations to inspect flight and ground measurements.</li></ul>
     </details>
-    <section className="panel section"><h2>{state.scenario}</h2><p>{state.running?'Running':'Paused'} · {last.t} s elapsed</p>
-    <div className="stats"><div>Cabin CO₂ <b>{Math.round(last.cabin)} ppm</b></div><div>Breathing zone <b>{Math.round(last.local)} ppm</b></div><div>Virtual sensors <b>{state.sensors.length}</b></div><div>Local threshold crossing <b>{metrics.truth==null?'None':metrics.truth+' s'}</b></div><div>NASA telemetry <b>{imported ? imported.rows.length.toLocaleString()+' source rows' : availability}</b></div></div></section>
-    <h2 className="quick-title">Quick-start scenarios</h2><div className="preset-grid">{Object.entries(presets).map(([name,settings])=><a className="panel section preset" href={routeHref('Simulation')} key={name} onClick={()=>state.select(name as keyof typeof presets)}><h3>{name}</h3><p>{Math.round(settings.ventilation*100)}% ventilation · {settings.activity}× activity</p></a>)}</div>
+    <section className="overview-paths" aria-label="Crew research tools">
+      <article><h2>Crew Health</h2><p>Explore spaceflight research on the lungs, heart, eyes, bones, and other body systems.</p><a href={routeHref('Crew Health')}>Explore the body map →</a></article>
+      <article><h2>Crew Nutrition</h2><p>Track meals by mission day and document the sources behind your nutrient totals.</p><a href={routeHref('Crew Nutrition')}>Open the nutrition log →</a></article>
+    </section>
   </>
 }
 export function App() {
@@ -104,7 +99,7 @@ export function App() {
     <div className="shell">
       <aside className="sidebar">
         <nav aria-label="Workspace">
-          {navigation.map(group => <div className="nav-group" key={group.label}>
+          {navigation.map(group => <div className="nav-group" role="group" aria-label={group.label} key={group.label}>
             <span className="nav-group-label">{group.label}</span>
             {group.pages.map(page => <a key={page} href={routeHref(page)} aria-current={page === route ? 'page' : undefined}>{page}</a>)}
           </div>)}
@@ -113,6 +108,8 @@ export function App() {
       <main id="main-content" data-page={routeHref(route).slice(2)} tabIndex={-1} key={route}>
         {route==='Overview' && <Overview/>}
         {(route==='Simulation'||route==='Sensor Lab') && <SimulationBoundary>{route==='Simulation' && <GuidedDemo/>}<Workbench lab={route==='Sensor Lab'}/></SimulationBoundary>}
+        {route==='Crew Nutrition' && <NutritionPage/>}
+        {route==='Crew Health' && <CrewHealthPage/>}
         {route==='NASA Data' && <NASADataPage/>}
         {route==='Research' && <ResearchPage/>}
         {route==='About' && <AboutPage/>}

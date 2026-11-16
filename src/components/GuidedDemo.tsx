@@ -1,13 +1,12 @@
 import { useEffect, useState } from 'react'
-import { initial, presets, run, version } from '../simulation/engine'
-import { cabinSensor, localSensor, detect, reading, threshold } from '../simulation/sensorModel'
+import { initial, version } from '../simulation/engine'
+import { cabinSensor, reading, threshold } from '../simulation/sensorModel'
 import { limitations, snapshot, useExperiments } from '../stores/experimentStore'
 import { CabinDiagram } from './CabinDiagram'
 import { TelemetryChart } from './TelemetryChart'
 
-const scenario = 'Reduced ventilation'
-const settings = presets[scenario]
-const relocated = { ...localSensor, id: cabinSensor.id }
+import { guidedScenario as scenario, guidedSettings as settings, guidedLocalSensor as relocated, guidedPoints, guidedCabinResult as baseline, guidedLocalResult as comparison } from '../simulation/guidedScenario'
+
 const ppm = (value: number) => Math.round(value).toLocaleString() + ' ppm'
 
 export function GuidedDemo() {
@@ -20,13 +19,11 @@ export function GuidedDemo() {
   const sensor = moved ? relocated : cabinSensor
   const peak = points.reduce((best, sample) => sample.local > best.local ? sample : best)
   const point = cursor === null ? (revealed ? peak : points[points.length - 1]) : points[cursor]
-  const baseline = detect(points, [cabinSensor])
-  const comparison = detect(points, [relocated])
   function reset() {
     setStage(1)
     setSaved(false)
     setCursor(null)
-    setPoints(run(settings))
+    setPoints(guidedPoints)
   }
   useEffect(() => {
     if (stage === 0) return
@@ -74,6 +71,8 @@ export function GuidedDemo() {
     </div>
     <p>An educational simulation of reduced ventilation. Compare one sensor in two locations using the same 300-second run.</p>
     {stage === 0 ? <button className="primary" onClick={reset}>Start 60-second demo</button> : <>
+      <h3>Step {stage} of 3 · {stage===1?'Read the cabin sensor':stage===2?'Reveal the breathing zone':'Compare the two placements'}</h3>
+      <p>{stage===1?'S1 samples mixed cabin air. The local reading is hidden until you reveal it.':stage===2?'Compare the cabin and local lines. The breathing zone is the air near the astronaut’s face. Move S1 to see whether it detects the crossing.':'Only the location of S1 changed. Compare the alert times and average errors on the same run.'}</p>
       <div className="viewer panel">
         <CabinDiagram point={point} sensors={[sensor]} airflow={false} heat coverage hidden={!revealed} playing={false} ventilation={settings.ventilation}/>
       </div>
@@ -111,5 +110,17 @@ export function GuidedDemo() {
         <TelemetryChart data={points} series={[{key:'cabin',label:'Cabin'},{key:'local',label:'Breathing zone'}]} unit="ppm" threshold={threshold} cursor={point.t} events={[{time:baseline.truth,label:'Local crossing'},{time:moved ? comparison.alert : baseline.alert,label:'Sensor alert'}]}/>
       </>}
     </>}
+    <details className="demo-guide">
+      <summary>Complete workbench guide</summary>
+      <ol>
+        <li><strong>Set up a scenario.</strong> Choose a preset or select Custom. Ventilation controls mixing between cabin air and the breathing zone. CO₂ removal controls how strongly the model removes CO₂ from the cabin. Activity changes the rate at which the astronaut adds CO₂. These sliders are model settings.</li>
+        <li><strong>Run and inspect.</strong> Run 300 s computes five minutes of modeled time. Run simulation plays the clock. Pause to inspect a sample, Step 1 s to advance, or Reset to return to the start. Playback speed changes how fast the clock moves on screen.</li>
+        <li><strong>Read the cabin view and graphs.</strong> Switch between the cabin sensor and modeled breathing zone. The graph shows elapsed seconds across the bottom and CO₂ concentration in parts per million (ppm) on the vertical axis. The dashed threshold is the 1,250 ppm experiment rule. Use the sample slider to inspect a moment or compare with the baseline preset.</li>
+        <li><strong>Test sensor placement.</strong> In <a href="#/sensor-lab">Sensor Lab</a>, start the masked exercise, run it, then reveal the local values. Drag a sensor or use the position controls. Compare the first local crossing with the first sensor alert to see whether the layout missed the event or detected it late.</li>
+        <li><strong>Compare and export results.</strong> Run measurements summarizes the run. The measurement catalog shows 100 statistics across ten model signals. Save an experiment to reopen it in Experiments or use Reports and the export buttons to share results.</li>
+        <li><strong>Explore evidence and crew context.</strong> <a href="#/nasa-data">NASA Data</a> shows measured flight and ground readings. <a href="#/research">Research</a> explains the sources. <a href="#/crew-health">Crew Health</a> covers spaceflight effects on the body, and <a href="#/crew-nutrition">Crew Nutrition</a> totals nutrient values you enter by mission day.</li>
+        <li><strong>Ask Roger.</strong> Open the AI guide in the lower-right corner for an explanation of the latest main-workbench run. Press Escape to close Roger or exit the active tutorial.</li>
+      </ol>
+    </details>
   </section>
 }
