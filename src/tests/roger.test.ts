@@ -36,3 +36,21 @@ it('rejects cross-origin use and handles a missing key without exposing configur
   expect(res.statusCode).toBe(503)
   expect(res.end.mock.calls.at(-1)?.[0]).toContain('NOT_CONFIGURED')
 })
+it('limits repeated requests before calling the provider',async()=>{
+ vi.stubEnv('GEMINI_API_KEY','test-only')
+ const fetcher=vi.spyOn(globalThis,'fetch')
+ try {
+  for(let i=0;i<11;i++) {
+   const res={statusCode:0,setHeader:vi.fn(),end:vi.fn()}
+   await handler({method:'POST',headers:{host:'calypso.test'},socket:{remoteAddress:'rate-limit-test'},body:{}} as never,res as never)
+   expect(res.statusCode).toBe(i<10?400:429)
+  }
+  expect(fetcher).not.toHaveBeenCalled()
+ } finally {fetcher.mockRestore()}
+})
+it('constrains the assistant to model evidence and explicit uncertainty',async()=>{
+ const {instructions}=await import('../../server/roger')
+ expect(instructions).toContain('Answer ONLY')
+ expect(instructions).toContain('I don\'t know')
+ expect(instructions).toContain('one-hour time-weighted average')
+})

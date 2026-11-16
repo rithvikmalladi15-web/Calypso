@@ -4,7 +4,7 @@ const buckets=new Map<string,{count:number;until:number}>()
 let total={count:0,until:0}
 export default async function handler(req:IncomingMessage & {body?:unknown},res:ServerResponse) {
   res.setHeader('Cache-Control','no-store')
-  res.setHeader('X-Roger-Version','open-cabin-v1')
+  res.setHeader('X-Roger-Version','model-references-v2')
   const send=(code:number,value:unknown)=>{res.statusCode=code;res.setHeader('Content-Type','application/json');res.end(JSON.stringify(value))}
   if(req.method!=='POST'){res.setHeader('Allow','POST');return send(405,{error:'Use POST.'})}
   const origin=req.headers.origin
@@ -16,13 +16,14 @@ export default async function handler(req:IncomingMessage & {body?:unknown},res:
   if(total.until<=now)total={count:0,until:now+60000}
   const bucket=buckets.get(ip)??{count:0,until:now+60000}
   if(bucket.count>=10||total.count>=60){res.setHeader('Retry-After','60');return send(429,{error:'Roger needs a short break. Try again in a minute.'})}
+  // Per-instance guard: deployment-level quotas are still needed for a global cap.
+  bucket.count++;buckets.set(ip,bucket);total.count++
   let body=req.body
   try{
     if(body===undefined){let raw='';for await(const chunk of req){raw+=chunk;if(raw.length>16000)return send(413,{error:'This message is too long.'})}body=JSON.parse(raw)}
     else if(typeof body==='string'){if(body.length>16000)return send(413,{error:'This message is too long.'});body=JSON.parse(body)}
     if(JSON.stringify(body).length>16000)return send(413,{error:'This message is too long.'})
     const input=parseInput(body)
-    bucket.count++;buckets.set(ip,bucket);total.count++
     try{return send(200,await askGemini(input,key,process.env.GEMINI_MODEL?.trim()||undefined))}
     catch(error){const code=error instanceof Error && /^(RATE_LIMIT|PROVIDER_[0-9]{3}|EMPTY_REPLY|Invalid model configuration)$/.test(error.message)?error.message:'INVALID_REPLY';return send(code==='RATE_LIMIT'?429:502,{error:code==='RATE_LIMIT'?'Roger’s Gemini quota is busy. Please try again in a minute.':'Roger couldn’t reach Gemini. Please try again shortly. Your simulation is unaffected.',code})}
   }catch{return send(400,{error:'Please send a short question with a valid run snapshot.'})}

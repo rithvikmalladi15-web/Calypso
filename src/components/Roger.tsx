@@ -1,6 +1,7 @@
+import { thresholds } from '../simulation/thresholds'
 import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { useSim } from '../stores/simulationStore'
-import { detect, isLocal, reading, threshold } from '../simulation/sensorModel'
+import { detect, isLocal, reading } from '../simulation/sensorModel'
 import type { RunContext } from '../../server/roger'
 
 type Message={role:'user'|'model';text:string;sources?:{id:string;title:string;url:string}[];sample?:number}
@@ -19,8 +20,8 @@ export function RogerAvatar({busy=false}:{busy?:boolean}) {
   </svg>
 }
 export function runSnapshot():RunContext {
-  const s=useSim.getState(), point=s.points[s.points.length-1], metrics=detect(s.points,s.sensors,s.noise)
-  return {scenario:s.scenario,elapsedSeconds:point.t,cabinPpm:Math.round(point.cabin),ventilationPercent:s.settings.ventilation*100,removalPercent:s.settings.scrubber*100,activity:s.settings.activity,thresholdPpm:threshold,masked:s.masked,
+  const s=useSim.getState(), point=s.points[s.points.length-1], rule=thresholds[s.thresholdId], metrics=detect(s.points,s.sensors,s.noise,rule.ppm,rule.windowSeconds)
+  return {scenario:s.scenario,elapsedSeconds:point.t,cabinPpm:Math.round(point.cabin),ventilationPercent:s.settings.ventilation*100,removalPercent:s.settings.scrubber*100,activity:s.settings.activity,thresholdPpm:rule.ppm,averagingSeconds:rule.windowSeconds,masked:s.masked,
     sensors:s.sensors.filter(sensor=>!s.masked||!isLocal(sensor)).map(sensor=>({id:sensor.id,location:isLocal(sensor)?'Breathing zone':'Cabin',ppm:Math.round(reading(point,sensor,s.noise))})),
     ...(!s.masked?{localPpm:Math.round(point.local),peakLocalPpm:Math.round(Math.max(...s.points.map(p=>p.local))),firstLocalCrossingSeconds:metrics.truth??null,firstSensorAlertSeconds:metrics.alert??null}:{})}
 }
@@ -65,7 +66,7 @@ export function Roger() {
       </div>
       <div className="roger-questions">{questions.map(question=><button key={question} disabled={busy} onClick={()=>void ask(question)}>{question}</button>)}</div>
       <form onSubmit={submit} className="roger-form"><label className="sr-only" htmlFor="roger-question">Ask Roger</label><textarea ref={input} id="roger-question" rows={2} maxLength={1200} value={draft} onChange={e=>setDraft(e.target.value)} placeholder="Ask about your experiment…" onKeyDown={e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();if(draft.trim())void ask(draft.trim())}}}/><button type="submit" disabled={busy||!draft.trim()} aria-label="Send question to Roger">↑</button></form>
-      <div className="roger-footer"><span>AI, not NASA-affiliated. Verify important claims.<br/>Question + run summary sent to Google Gemini.</span><button disabled={busy||!messages.length} onClick={()=>{setMessages([]);setError('');input.current?.focus()}}>Clear</button></div>
+      <div className="roger-footer"><span>AI-generated, may be inaccurate. Not NASA-affiliated.<br/>Question + run summary sent to Google Gemini.</span><button disabled={busy||!messages.length} onClick={()=>{setMessages([]);setError('');input.current?.focus()}}>Clear</button></div>
     </section>}
     <button ref={launcher} className="roger-launcher" aria-label={open?'Close Roger AI guide':'Ask Roger AI guide'} aria-expanded={open} onClick={()=>open?close():setOpen(true)}><RogerAvatar busy={busy}/><span><strong>Ask Roger</strong><small>AI lab partner</small></span><span className="roger-launch-arrow" aria-hidden="true">{open?'×':'↗'}</span></button>
   </div>
