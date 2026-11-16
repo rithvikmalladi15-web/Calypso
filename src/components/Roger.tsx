@@ -40,7 +40,7 @@ export function Roger() {
     const context=runSnapshot(),controller=new AbortController();request.current=controller
     const history=messages.slice(-6).map(({role,text})=>({role,text}))
     setMessages(previous=>[...previous.slice(-11),{role:'user',text:question,sample:context.elapsedSeconds}]);setDraft('');setError('');setBusy(true)
-    const timeout=window.setTimeout(()=>controller.abort(),30000)
+    const timeout=window.setTimeout(()=>controller.abort(),50000)
     try{
       const response=await fetch('/api/roger',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({question,context,history}),signal:controller.signal})
       const data=await response.json().catch(()=>{throw new Error('Roger’s server is restarting or unavailable. Please try again shortly.')})

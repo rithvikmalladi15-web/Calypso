@@ -37,10 +37,10 @@ NASA sources below are curated reference descriptions, not full documents. Use o
 Return JSON only: {"answer":"plain text with paragraphs, no Markdown or URLs","sourceIds":["IDs of relevant supplied sources"]}. If a question is unrelated to CALYPSO or spacecraft environmental science, briefly redirect.
 Reference directory: ${JSON.stringify(sources)}`
 
-export async function askGemini(input:RogerInput,key:string,model='gemini-2.5-flash-lite',fetcher:typeof fetch=fetch) {
+export async function askGemini(input:RogerInput,key:string,model='gemini-3.1-flash-lite',fetcher:typeof fetch=fetch) {
   if(!/^[a-zA-Z0-9.-]+$/.test(model))throw new Error('Invalid model configuration')
   const response=await fetcher(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,{
-    method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':key},signal:AbortSignal.timeout(25000),
+    method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':key},signal:AbortSignal.timeout(45000),
     body:JSON.stringify({systemInstruction:{parts:[{text:instructions}]},contents:[{role:'user',parts:[{text:JSON.stringify(input)}]}],generationConfig:{temperature:.3,maxOutputTokens:800,responseMimeType:'application/json'}}),
   })
   if(!response.ok)throw new Error(response.status===429?'RATE_LIMIT':'PROVIDER_'+response.status)

@@ -17,7 +17,7 @@ it('rejects oversized questions and invalid numeric settings',()=>{
 })
 it('uses server credentials, grounds the request and returns only registered source links',async()=>{
   const upstream=vi.fn().mockResolvedValue(new Response(JSON.stringify({candidates:[{content:{parts:[{text:JSON.stringify({answer:'The wall sensor missed the local crossing.',sourceIds:['CO2','invented']})}]}}]})))
-  const response=await askGemini(parseInput(input),'server-test-key','gemini-2.5-flash-lite',upstream)
+  const response=await askGemini(parseInput(input),'server-test-key','gemini-3.1-flash-lite',upstream)
   expect(response.sources.map(s=>s.id)).toEqual(['CO2'])
   const options=upstream.mock.calls[0][1]
   expect(options.headers['x-goog-api-key']).toBe('server-test-key')
@@ -25,7 +25,7 @@ it('uses server credentials, grounds the request and returns only registered sou
   expect(JSON.stringify(response)).not.toContain('server-test-key')
 })
 it('fails clearly for provider throttling rather than inventing an answer',async()=>{
-  await expect(askGemini(parseInput(input),'test','gemini-2.5-flash-lite',vi.fn().mockResolvedValue(new Response('{}',{status:429})))).rejects.toThrow('RATE_LIMIT')
+  await expect(askGemini(parseInput(input),'test','gemini-3.1-flash-lite',vi.fn().mockResolvedValue(new Response('{}',{status:429})))).rejects.toThrow('RATE_LIMIT')
 })
 it('rejects cross-origin use and handles a missing key without exposing configuration',async()=>{
   vi.stubEnv('GEMINI_API_KEY','')
