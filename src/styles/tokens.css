@@ -1,1 +1,10 @@
 :root{color-scheme:dark;--bg:#0b1220;--panel:#1a3045;--surface:#121e2e;--line:#293f54;--cyan:#39c8de;--text:#f1f5f9;--muted:#a8b8c8;--amber:#e9ac54;--mono:"JetBrains Mono",monospace;--heading:"Space Grotesk",sans-serif}
+
+:root{
+  --workspace-space-sm:8px;
+  --workspace-space-md:16px;
+  --workspace-space-lg:24px;
+  --workspace-radius:4px;
+  --workspace-panel-label:12px;
+  --status-positive:#69c7af;
+}

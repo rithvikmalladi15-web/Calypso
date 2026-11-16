@@ -296,3 +296,11 @@ main[data-page=sensor-lab] .workstation-heading{padding-bottom:16px;border-botto
 .timeline-inspect{display:flex;align-items:center;gap:12px}.timeline-inspect .field{flex:1}
 @media(max-width:1000px){.workspace-status{margin-left:0}}
 @media(max-width:600px){.model-status{display:none}.workspace-clock{font-size:11px}}
+
+.viewer{background:#070a0e;animation:none}
+.panel{border-radius:var(--workspace-radius)}
+.panel-title{font-size:var(--workspace-panel-label);letter-spacing:.08em;text-transform:uppercase}
+.instrument-strip,.simulation-caption{padding-inline:var(--workspace-space-md)}
+.timeline-inspect{gap:var(--workspace-space-sm)}
+.workspace-status{gap:var(--workspace-space-md)}
+.model-status::before{background:var(--status-positive)}
