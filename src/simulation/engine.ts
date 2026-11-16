@@ -3,6 +3,9 @@ export type Point = { t: number; cabin: number; local: number }
 export const version = '1.0'
 export const initial: Point = { t: 0, cabin: 650, local: 650 }
 export const presets = {
+  'Baseline': { ventilation: .65, scrubber: .65, activity: 1 },
+  'Best case': { ventilation: 1, scrubber: 1, activity: .6 },
+  'Worst case': { ventilation: .08, scrubber: .25, activity: 2.5 },
   'Routine operations': { ventilation: .65, scrubber: .65, activity: 1 },
   'Reduced ventilation': { ventilation: .12, scrubber: .65, activity: 1 },
   'Exercise session': { ventilation: .65, scrubber: .65, activity: 2.5 },

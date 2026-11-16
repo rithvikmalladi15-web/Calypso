@@ -6,7 +6,7 @@ export function ResearchPage() {
   const [query,setQuery]=useState('')
   const matches=sources.filter(s=>Object.values(s).join(' ').toLowerCase().includes(query.trim().toLowerCase()))
   return <>
-    <div className="page-heading"><h1>Research</h1><p>Inspect the model assumptions and trace the NASA evidence used for context.</p></div>
+    <div className="page-heading"><h1>Research</h1><p>See which NASA sources informed CALYPSO and how the simulator models cabin air.</p></div>
     <section className="panel section"><h2>Two-compartment mass balance</h2><p>{limitations}</p>
       <div className="equation">Vᵦ dCᵦ/dt = S − Q(Cᵦ − C𝚌)<br/>V𝚌 dC𝚌/dt = Q(Cᵦ − C𝚌) − R C𝚌</div>
       <p>Concentrations are in ppm and time is in seconds. Effective volumes Vᵦ and V𝚌 are 1 and 30 m³. Exchange Q = 0.006 + 0.074 × ventilation and removal R = 0.15 × scrubber are in m³/s. Source S = 22 × relative activity is in ppm·m³/s. Both zones start at 650 ppm. Forward Euler integrates the balances in increments of at most one second.</p>

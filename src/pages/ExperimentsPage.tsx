@@ -29,7 +29,7 @@ export function ExperimentsPage({report = false}: {report?:boolean}) {
     if (text.trim()) mutate(()=>{note(text.trim());setText('')})
   }
   return <>
-    <div className="page-heading"><h1>{report?'Reports':'Experiments'}</h1><p>{report?'Review and export the methods, configuration, and results of a saved run.':'Replay saved runs, compare outcomes, and test parameter sensitivity.'}</p></div>
+    <div className="page-heading"><h1>{report?'Reports':'Experiments'}</h1><p>{report?'Review a saved run and export its settings, methods, and results.':'Reopen a saved run or compare two runs side by side.'}</p></div>
     {error && <p className="notice" role="alert">{error}</p>}
     {!current ? <section className="panel section"><h2>No experiments saved</h2><p>Run a scenario and save it from the simulation workbench.</p><a className="button" href={routeHref('Simulation')}>Open simulation</a></section> : <>
       <section className="panel section no-print">

@@ -1,3 +1,4 @@
+import { usePreferences } from '../app/SettingsContext'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Upload } from 'lucide-react'
 import { loadDefault } from '../data/nasaDataLoader'
@@ -49,7 +50,8 @@ export function NASADataPage() {
     if (!Number.isFinite(t)) return []
     return [{t, ...Object.fromEntries(active.map((c, index) => ['series'+index, measurement(row[c.header], c)]))} as Record<string, number | null> & {t: number}]
   }).sort((a,b) => a.t - b.t), [data, timestamp, active])
-  const unit = units[metric][0]
+  const imperial = usePreferences()?.preferences.units === 'Imperial' && metric === 'Temperature'
+  const unit = imperial ? '°F' : units[metric][0]
   const first = Math.min(start, Math.max(0, observations.length - windowSize))
   const rr1Cadence = name === 'RR-1_EDA_Telemetry_table.csv' && timestamp === 'Controller_Time_GMT'
   const gapCount = rr1Cadence ? observations.filter((row,i)=>i > 0 && row.t-observations[i-1].t > 300_000).length : 0
@@ -61,7 +63,7 @@ export function NASADataPage() {
     setColumns(existing => existing.map(c => c.header === header ? {...c,...patch} : c))
   }
   return <>
-    <div className="page-heading"><h1>NASA Data</h1><p>Explore reported environmental measurements with their original context and gaps.</p></div>
+    <div className="page-heading"><h1>NASA Data</h1><p>Compare measured conditions on the ISS and on the ground, or import your own telemetry CSV.</p></div>
     <section className="panel upload" onDragOver={e => e.preventDefault()} onDrop={e => {e.preventDefault(); void open(e.dataTransfer.files[0])}}>
       <Upload size={21}/><div><strong>{loading ? 'Loading telemetry…' : name || 'Import NASA CSV'}</strong><p>Drop a CSV here or browse. Browser imports are held in memory.</p></div>
       <label className="button">Browse CSV<input type="file" accept=".csv,text/csv" onChange={e => {void open(e.target.files?.[0]); e.target.value = ''}} /></label>
@@ -73,7 +75,9 @@ export function NASADataPage() {
         <p>{usable.toLocaleString()} usable {metric} rows of {data.rows.length.toLocaleString()} original rows · {(data.rows.length - observations.length).toLocaleString()} invalid timestamps{rr1Cadence && ' · '+gapCount.toLocaleString()+' intervals longer than 5 min'}</p>
         <p>{name.startsWith('RR-1_') ? 'RR-1 · experiment environmental telemetry' : data.mission ? 'Mission field · ' + (data.rows[0]?.[data.mission] || 'unspecified') : 'Mission unspecified'}{data.location && ' · ' + (data.rows[0]?.[data.location] || 'location unspecified')}. Context is determined from the export and header labels. These readings describe the measured experiment environment.</p>
         {usable ? <><div className="legend">{active.map((c,i)=><span key={c.header} style={{color:colors[i % colors.length]}}>{c.location} · {c.header} ({observations.filter(row=>row['series'+i] !== null).length.toLocaleString()})</span>)}</div>
-          <TelemetryChart data={chartRows} series={active.map((c,i)=>({key:'series'+i,label:c.location+' · '+c.header}))} unit={unit} time={!!timestamp}/>
+          <TelemetryChart data={imperial ? chartRows.map(row=>({
+            ...row,...Object.fromEntries(Object.entries(row).flatMap(([key,value])=>key.startsWith('series') && typeof value==='number' ? [[key,value*9/5+32]] : [])),
+          })) : chartRows} series={active.map((c,i)=>({key:'series'+i,label:c.location+' · '+c.header}))} unit={unit} time={!!timestamp}/>
           <label className="range-label">Chart window · rows {first+1}–{Math.min(first+windowSize,observations.length)}<input type="range" min={0} max={Math.max(0,observations.length-windowSize)} value={first} onChange={e=>setStart(+e.target.value)}/></label>
           <label>Rows per window <select value={windowSize} onChange={e=>setWindowSize(+e.target.value)}>{[200,1000,3000].map(n=><option key={n}>{n}</option>)}</select></label>
           <p>{timestamp && observations.length > 0 && <>Source range · {new Date(observations[0].t).toISOString()} to {new Date(observations[observations.length-1].t).toISOString()}<br/></>}Horizontal axis · {timestamp ? 'UTC (offset-free timestamps treated as UTC)' : 'source row index'} · Vertical axis · {unit}</p></> : <p>No usable observations for this measurement. Review the column mapping and units below.</p>}

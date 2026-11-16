@@ -14,7 +14,7 @@ export function CabinDiagram({point, sensors, airflow, heat, coverage, hidden, p
       <linearGradient id="suit" x2="1" y2="1"><stop stopColor="#d5e1e9"/><stop offset=".57" stopColor="#859daf"/><stop offset="1" stopColor="#465f74"/></linearGradient>
       <linearGradient id="visor" x2="1" y2="1"><stop stopColor="#416477"/><stop offset=".48" stopColor="#193349"/><stop offset="1" stopColor="#0b1625"/></linearGradient>
     </defs>
-    <rect width="800" height="470" fill="#070a0e"/><rect width="800" height="470" fill="url(#draft)"/>
+    <rect width="800" height="470" fill="#070a0e"/><rect width="800" height="470" className="cabin-grid" fill="url(#draft)"/>
     <path d="M135 53H665L744 126V344L665 417H135L56 344V126Z" fill="#0c121a" stroke="#39596f" strokeWidth="2"/>
     <path d="M219 104H581L643 163V306L581 367H219L157 306V163Z" fill="#101923" stroke="#48687c" strokeWidth="2"/>
     <g fill="none" stroke="#345267"><path d="M135 53l84 51m446-51-84 51m163 22-101 37M56 126l101 37M56 344l101-38m587 38-101-38m22 111-84-50m-446 50 84-50M157 235h486M357 367l-40 50m126-50 40 50"/><path d="M79 151h53v171H79zm589 0h53v171h-53zM228 124h344v44H228z"/></g>

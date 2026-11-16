@@ -1,4 +1,6 @@
-import { useState } from 'react'
+import { download, downloadChart } from '../lib/chartDownloads'
+import { readScenario, scenarioUrl } from '../simulation/scenarioLink'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Activity, ArrowDownToLine, AudioLines, Crosshair, Eye, EyeOff, Layers3, Pause, Play, RotateCcw, Wind } from 'lucide-react'
 import { CabinDiagram, zoneName } from './CabinDiagram'
 import { TelemetryChart } from './TelemetryChart'
@@ -19,6 +21,49 @@ export function Workbench({lab = false}: {lab?: boolean}) {
   const [instrument, setInstrument] = useState<'cabin' | 'local'>('cabin')
   const masked = hidden || instrument === 'cabin'
   const [status, setStatus] = useState('')
+  const [compare, setCompare] = useState(false)
+  const [sharedLink, setSharedLink] = useState('')
+  const chart = useRef<HTMLElement>(null)
+  const [controlsOpen, setControlsOpen] = useState(()=>typeof matchMedia === 'undefined' || !matchMedia('(max-width:600px)').matches)
+  useEffect(()=>{
+    if (lab) return
+    function restoreScenario() {
+      if (!location.hash.startsWith('#/simulation?')) return
+      const settings = readScenario(location.hash)
+      if (settings) {
+        set({settings,scenario:'Custom',points:[initial],running:false})
+        setStatus('Shared scenario loaded.')
+      } else setStatus('This scenario link contains missing or out-of-range settings.')
+    }
+    restoreScenario()
+    window.addEventListener('hashchange',restoreScenario)
+    return ()=>window.removeEventListener('hashchange',restoreScenario)
+  },[lab,set])
+  const baseline = useMemo(()=>run(presets.Baseline,point.t),[point.t])
+  const reference = baseline[baseline.length - 1]
+  const chartData = useMemo(()=>compare && !hidden
+    ? s.points.map((sample,index)=>({...sample,baselineLocal:baseline[index]?.local}))
+    : s.points,[compare,hidden,s.points,baseline])
+  const delta = (value:number, referenceValue:number) => {
+    const change = Math.round(value-referenceValue)
+    return change === 0 ? 'No change' : (change > 0 ? '↑ +' : '↓ −')+Math.abs(change)+' ppm'
+  }
+  async function copyScenario() {
+    const link = scenarioUrl(s.settings)
+    setSharedLink(link)
+    try { await navigator.clipboard.writeText(link); setStatus('Copied!') }
+    catch { setStatus('Copy the scenario URL from the field below.') }
+  }
+  function exportCsv() {
+    const rows = s.points.map(sample=>hidden ? [sample.t,sample.cabin] : [sample.t,sample.cabin,sample.local])
+    const headings = hidden ? 'elapsed_s,cabin_co2_ppm' : 'elapsed_s,cabin_co2_ppm,breathing_zone_co2_ppm'
+    download(new Blob([[headings,...rows.map(row=>row.join(','))].join('\n')],{type:'text/csv'}),'calypso-co2.csv')
+  }
+  async function exportPng() {
+    const svg = chart.current?.querySelector('svg.recharts-surface')
+    if (!(svg instanceof SVGSVGElement)) { setStatus('Chart is unavailable.'); return }
+    try { await downloadChart(svg) } catch { setStatus('Could not export the chart as PNG.') }
+  }
   const peak = s.points.reduce((max, sample) => Math.max(max, sample.local), 0)
   const timeAbove = s.points.slice(1).reduce((total, sample, index) => {
     const previous = s.points[index]
@@ -33,7 +78,11 @@ export function Workbench({lab = false}: {lab?: boolean}) {
   ].sort((a,b)=>a.error-b.error) : []
   const move = (id: string,x: number,y: number) => set(state=>({sensors:state.sensors.map(sensor=>sensor.id===id ? {...sensor,x:Math.max(.08,Math.min(.92,x)),y:Math.max(.12,Math.min(.88,y))} : sensor)}))
   function settings(key: keyof Settings,value: number) {
-    set(state=>({settings:{...state.settings,[key]:value},points:[initial],running:false}))
+    if (!Number.isFinite(value) || value < 0 || value > (key === 'activity' ? 3 : 1)) {
+      setStatus('Choose a value within the shown range.')
+      return
+    }
+    set(state=>({scenario:'Custom',settings:{...state.settings,[key]:value},points:[initial],running:false}))
   }
   function save() {
     try {
@@ -47,14 +96,16 @@ export function Workbench({lab = false}: {lab?: boolean}) {
     </div>
     {status && <p role="status" className="notice">{status}</p>}
     <div className="bench">
-      <details className="panel controls" open><summary>Experiment controls</summary>
+      <details className="panel controls" open={controlsOpen} onToggle={event=>setControlsOpen(event.currentTarget.open)}>
+        <summary>Experiment controls</summary>
         <div className="panel-title"><Crosshair size={16}/> Experiment controls</div>
         <div className="panel-pad">
-          <label className="field">Scenario<select value={s.scenario} onChange={e=>s.select(e.target.value as keyof typeof presets)}>{Object.keys(presets).map(name=><option key={name}>{name}</option>)}</select></label>
+          <label className="field">Scenario<select value={s.scenario in presets ? s.scenario : 'Custom'} onChange={e=>{const preset=e.target.value;if(preset==='Custom')set({scenario:'Custom'});else s.select(preset as keyof typeof presets)}}>{Object.keys(presets).map(name=><option key={name}>{name}</option>)}<option value="Custom">{s.scenario in presets || s.scenario==='Custom' ? 'Custom' : s.scenario}</option></select></label>
           <div className="subheading">MODEL PARAMETERS</div>
-          <label className="range-label"><span>Ventilation <b>{fmt(s.settings.ventilation*100)}%</b></span><input type="range" min="0" max="100" value={s.settings.ventilation*100} onChange={e=>settings('ventilation',+e.target.value/100)}/></label>
-          <label className="range-label"><span>CO₂ removal <b>{fmt(s.settings.scrubber*100)}%</b></span><input type="range" min="0" max="100" value={s.settings.scrubber*100} onChange={e=>settings('scrubber',+e.target.value/100)}/></label>
-          <label className="range-label"><span>Relative activity <b>{s.settings.activity.toFixed(1)}×</b></span><input type="range" min="0" max="3" step=".1" value={s.settings.activity} onChange={e=>settings('activity',+e.target.value)}/></label>
+          <label className="range-label"><span>Ventilation <b>{fmt(s.settings.ventilation*100)}%</b></span><input title="Air mixing strength. Baseline: 65%." type="range" min="0" max="100" value={s.settings.ventilation*100} onChange={e=>settings('ventilation',+e.target.value/100)}/></label>
+          <label className="range-label"><span>CO₂ removal <b>{fmt(s.settings.scrubber*100)}%</b></span><input title="Cabin CO₂ removal strength. Baseline: 65%." type="range" min="0" max="100" value={s.settings.scrubber*100} onChange={e=>settings('scrubber',+e.target.value/100)}/></label>
+          <label className="range-label"><span>Relative activity <b>{s.settings.activity.toFixed(1)}×</b></span><input title="CO₂ production relative to resting activity. Baseline: 1×." type="range" min="0" max="3" step=".1" value={s.settings.activity} onChange={e=>settings('activity',+e.target.value)}/></label>
+          {!lab && <><button onClick={()=>void copyScenario()}>Copy scenario link</button>{sharedLink && <label className="field">Scenario URL<input value={sharedLink} readOnly onFocus={event=>event.target.select()}/></label>}</>}
           <div className="divider"/>
           <div className="subheading">VIEW LAYERS</div>
           <label className="check"><Wind size={15}/> Airflow<input type="checkbox" checked={air} onChange={e=>setAir(e.target.checked)}/></label>
@@ -70,7 +121,9 @@ export function Workbench({lab = false}: {lab?: boolean}) {
         <CabinDiagram point={point} sensors={s.sensors} airflow={air} heat={heat} coverage={coverage} hidden={masked} playing={s.running} ventilation={s.settings.ventilation} onMove={lab ? move : undefined}/>
         <div className="playbar"><button className="primary" disabled={point.t>=3600} onClick={()=>set({running:!s.running})}>{s.running ? <Pause size={15}/> : <Play size={15}/>} {s.running ? 'Pause' : 'Run simulation'}</button>
           <button aria-label="Reset simulation" title="Reset simulation" onClick={s.reset}><RotateCcw size={15}/></button>
-          <button onClick={()=>set({points:run(s.settings),running:false})}>Run 300 s</button><span className="mono end" title="Elapsed model time (10× playback)">{String(Math.floor(point.t/60)).padStart(2,'0')}:{String(point.t%60).padStart(2,'0')}</span></div>
+          <button disabled={s.running || point.t>=3600} onClick={s.tick}>Step 1 s</button>
+          <select aria-label="Playback speed" value={s.speed} onChange={event=>set({speed:Number(event.target.value)})}>{[.5,1,2,4].map(speed=><option key={speed} value={speed}>{speed}×</option>)}</select>
+          <button onClick={()=>set({points:run(s.settings),running:false})}>Run 300 s</button><span className="mono end" title="Elapsed model time">{String(Math.floor(point.t/60)).padStart(2,'0')}:{String(point.t%60).padStart(2,'0')}</span></div>
       </section>
       <details className="panel readouts" open><summary>Telemetry</summary>
         <div className="panel-title"><AudioLines size={16}/> Live telemetry <span className={'end live '+(s.running ? 'active' : '')} aria-label={s.running ? 'Running' : 'Paused'}/></div>
@@ -86,11 +139,22 @@ export function Workbench({lab = false}: {lab?: boolean}) {
         </div>
       </details>
     </div>
-    <section className="panel timeline">
+    <section ref={chart} className="panel timeline">
       <div className="panel-title"><Activity size={16}/> CO₂ timeline <span className="micro end">MODEL OUTPUT · PPM</span></div>
       <div className="panel-pad">
         <div className="legend"><span className="cyan">● Cabin</span>{!hidden && <span>● Breathing zone</span>}<span>Elapsed model time (s)</span></div>
-        <TelemetryChart data={s.points} series={[{key:'cabin',label:'Cabin'},...(!hidden?[{key:'local',label:'Breathing zone'}]:[])]} unit="ppm"/>
+        <div className="actions">
+          {!hidden && <label className="check"><input type="checkbox" checked={compare} onChange={event=>setCompare(event.target.checked)}/> Compare against baseline</label>}
+          <button onClick={exportCsv}>Export CSV</button><button onClick={()=>void exportPng()}>Export chart PNG</button>
+        </div>
+        {!hidden && <div className="stats">
+          <div>Cabin CO₂ <b>{fmt(point.cabin)} ppm</b>{delta(point.cabin,reference.cabin)} vs baseline</div>
+          <div>Breathing zone <b>{fmt(point.local)} ppm</b>{delta(point.local,reference.local)} vs baseline</div>
+          <div>Local minus cabin <b>{fmt(point.local-point.cabin)} ppm</b>{delta(point.local-point.cabin,reference.local-reference.cabin)} vs baseline</div>
+        </div>}
+        <TelemetryChart data={chartData} series={[{key:'cabin',label:'Cabin'},...(!hidden?[{key:'local',label:'Breathing zone'}]:[]),...(compare && !hidden ? [{key:'baselineLocal',label:'Baseline breathing zone'}] : [])]} unit="ppm"/>
+        {!hidden && <p>At {point.t} s, local CO₂ is {fmt(Math.abs(point.local-point.cabin))} ppm {point.local>=point.cabin ? 'above or equal to' : 'below'} the cabin reading. Ventilation mixes the two air volumes, while activity adds CO₂ near the astronaut.</p>}
+        <span className="sr-only" role="status">{!s.running && !hidden ? `Paused at ${point.t} seconds. Local CO₂ ${fmt(point.local)} ppm.` : ''}</span>
       </div>
     </section>
     <details className="panel section" open><summary>{lab ? "Sensor placement and detection" : "Detection events"}</summary>

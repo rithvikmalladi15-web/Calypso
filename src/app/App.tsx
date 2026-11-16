@@ -1,4 +1,5 @@
-import { SimulationMusic } from '../components/SimulationMusic'
+import { SimulationBoundary } from '../components/SimulationBoundary'
+import { WorkspaceSettings } from '../components/WorkspaceSettings'
 import { CabinDiagram } from '../components/CabinDiagram'
 import { cabinSensor } from '../simulation/sensorModel'
 import { initial } from '../simulation/engine'
@@ -14,7 +15,13 @@ import { presets } from '../simulation/engine'
 import { detect } from '../simulation/sensorModel'
 import { useSim } from '../stores/simulationStore'
 import { useData } from '../stores/dataStore'
-import { routeHref, routes, useRoute } from './router'
+import { routeHref, useRoute, type Route } from './router'
+
+const navigation: {label: string; pages: Route[]}[] = [
+  {label:'Explore', pages:['Overview','Simulation','Sensor Lab']},
+  {label:'Evidence', pages:['NASA Data','Research']},
+  {label:'Saved work', pages:['Experiments','Reports']},
+]
 
 function Overview() {
   const state=useSim()
@@ -43,15 +50,22 @@ function Overview() {
         <figcaption>Starting layout · One sensor in the cabin</figcaption>
       </figure>
     </section>
-    <section className="panel section purpose">
-      <h2>Why we built CALYPSO</h2>
-      <p>One reading can hide a local change in air quality. We built CALYPSO so students and judges can see why the location of a CO₂ sensor matters in a spacecraft cabin.</p>
-      <ul>
-        <li>Compare cabin and breathing-zone readings at the same moment.</li>
-        <li>Move one virtual sensor to isolate the effect of placement.</li>
-        <li>Review NASA observations alongside the model assumptions in <a href={routeHref('Research')}>Research</a>.</li>
-      </ul>
+    <section className="overview-paths" aria-label="Ways to explore CALYPSO">
+      <article>
+        <h2>Test a sensor layout</h2>
+        <p>Compare the cabin and breathing-zone readings, then move a virtual sensor and see what changes.</p>
+        <a href={routeHref('Sensor Lab')}>Open Sensor Lab <span aria-hidden="true">→</span></a>
+      </article>
+      <article>
+        <h2>Explore NASA observations</h2>
+        <p>Inspect CO₂, humidity, and temperature readings from the ISS and ground control.</p>
+        <a href={routeHref('NASA Data')}>Open the data explorer <span aria-hidden="true">→</span></a>
+      </article>
     </section>
+    <details className="panel section purpose">
+      <summary>Why we built CALYPSO</summary>
+      <p>A cabin reading can hide a local change in air quality. We built CALYPSO so students and judges can investigate where a CO₂ sensor would detect that change and see the assumptions behind the result.</p>
+    </details>
     <section className="panel section"><h2>{state.scenario}</h2><p>{state.running?'Running':'Paused'} · {last.t} s elapsed</p>
     <div className="stats"><div>Cabin CO₂ <b>{Math.round(last.cabin)} ppm</b></div><div>Breathing zone <b>{Math.round(last.local)} ppm</b></div><div>Virtual sensors <b>{state.sensors.length}</b></div><div>Local threshold crossing <b>{metrics.truth==null?'None':metrics.truth+' s'}</b></div><div>NASA telemetry <b>{imported ? imported.rows.length.toLocaleString()+' source rows' : availability}</b></div></div></section>
     <h2 className="quick-title">Quick-start scenarios</h2><div className="preset-grid">{Object.entries(presets).map(([name,settings])=><a className="panel section preset" href={routeHref('Simulation')} key={name} onClick={()=>state.select(name as keyof typeof presets)}><h3>{name}</h3><p>{Math.round(settings.ventilation*100)}% ventilation · {settings.activity}× activity</p></a>)}</div>
@@ -60,27 +74,32 @@ function Overview() {
 export function App() {
   const route=useRoute()
   const running=useSim(s=>s.running)
+  const speed=useSim(s=>s.speed)
   useEffect(()=>{
     if(!running) return
-    const timer=window.setInterval(()=>useSim.getState().tick(),100)
+    const timer=window.setInterval(()=>useSim.getState().tick(),100/speed)
     return ()=>window.clearInterval(timer)
-  },[running])
+  },[running,speed])
   useEffect(()=>{ window.scrollTo(0,0) },[route])
   return <>
     <a className="skip" href="#main-content" onClick={e=>{e.preventDefault();document.getElementById('main-content')?.focus()}}>Skip to content</a>
     <header className="topbar">
       <a href={routeHref('Overview')} className="brand" aria-label="Calypso overview"><span className="brand-icon"><Orbit size={21}/></span><span>CALYPSO</span></a>
       <span className="workspace-description">Spacecraft environmental research</span>
+      <WorkspaceSettings/>
     </header>
     <div className="shell">
       <aside className="sidebar">
         <nav aria-label="Workspace">
-          {routes.map(r => <a key={r} href={routeHref(r)} aria-current={r===route?'page':undefined}>{r}</a>)}
+          {navigation.map(group => <div className="nav-group" key={group.label}>
+            <span className="nav-group-label">{group.label}</span>
+            {group.pages.map(page => <a key={page} href={routeHref(page)} aria-current={page === route ? 'page' : undefined}>{page}</a>)}
+          </div>)}
         </nav>
       </aside>
-      <main id="main-content" tabIndex={-1} key={route}>
+      <main id="main-content" data-page={routeHref(route).slice(2)} tabIndex={-1} key={route}>
         {route==='Overview' && <Overview/>}
-        {(route==='Simulation'||route==='Sensor Lab') && <>{route==='Simulation' && <><SimulationMusic/><GuidedDemo/></>}<Workbench lab={route==='Sensor Lab'}/></>}
+        {(route==='Simulation'||route==='Sensor Lab') && <SimulationBoundary>{route==='Simulation' && <GuidedDemo/>}<Workbench lab={route==='Sensor Lab'}/></SimulationBoundary>}
         {route==='NASA Data' && <NASADataPage/>}
         {route==='Research' && <ResearchPage/>}
         {(route==='Experiments'||route==='Reports') && <ExperimentsPage report={route==='Reports'}/>}
