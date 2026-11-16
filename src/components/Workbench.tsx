@@ -4,7 +4,7 @@ import { useScenarioSolver } from '../simulation/useScenarioSolver'
 import { download, downloadChart } from '../lib/chartDownloads'
 import { readScenario, scenarioUrl } from '../simulation/scenarioLink'
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Activity, ArrowDownToLine, AudioLines, Crosshair, Eye, EyeOff, Layers3, Pause, Play, RotateCcw, Wind } from 'lucide-react'
+import { Activity, ArrowDownToLine, AudioLines, Crosshair, Eye, EyeOff, Layers3, Pause, Play, RotateCcw } from 'lucide-react'
 import { CabinDiagram, zoneName } from './CabinDiagram'
 import { TelemetryChart } from './TelemetryChart'
 import { initial, presets, run, type Settings } from '../simulation/engine'
@@ -21,7 +21,6 @@ export function Workbench({lab = false}: {lab?: boolean}) {
   const latest = s.points[s.points.length-1] ?? initial
   const point = s.points[Math.min(cursor ?? s.points.length - 1, s.points.length - 1)] ?? initial
   useEffect(() => { if (s.running || s.points.length === 1) setCursor(null) }, [s.running,s.points.length])
-  const [air, setAir] = useState(true)
   const [heat, setHeat] = useState(true)
   const [coverage, setCoverage] = useState(lab)
   const [hidden, hide] = useState(false)
@@ -58,6 +57,7 @@ export function Workbench({lab = false}: {lab?: boolean}) {
   const chartData = useMemo(()=>compare && !hidden
     ? s.points.map((sample,index)=>({...sample,baselineLocal:baseline[index]?.local}))
     : s.points,[compare,hidden,s.points,baseline])
+  const sensorChartData = chartData.map(sample=>({...sample,...Object.fromEntries(s.sensors.map(sensor=>[sensor.id,reading(sample,sensor,s.noise)]))}))
   const delta = (value:number, referenceValue:number) => {
     const change = Math.round(value-referenceValue)
     return change === 0 ? 'No change' : (change > 0 ? '↑ +' : '↓ −')+Math.abs(change)+' ppm'
@@ -149,7 +149,6 @@ export function Workbench({lab = false}: {lab?: boolean}) {
           {!lab && <><button onClick={()=>void copyScenario()}>Copy scenario link</button>{sharedLink && <label className="field">Scenario URL<input value={sharedLink} readOnly onFocus={event=>event.target.select()}/></label>}</>}
           <div className="divider"/>
           <div className="subheading">VIEW LAYERS</div>
-          <label className="check"><Wind size={15}/> Airflow<input type="checkbox" checked={air} onChange={e=>setAir(e.target.checked)}/></label>
           <label className="check"><Layers3 size={15}/> CO₂ overlay<input type="checkbox" checked={heat} onChange={e=>setHeat(e.target.checked)}/></label>
           <label className="check"><Crosshair size={15}/> Placement halos<input type="checkbox" checked={coverage} onChange={e=>setCoverage(e.target.checked)}/></label>
         </div>
@@ -164,44 +163,7 @@ export function Workbench({lab = false}: {lab?: boolean}) {
           {!masked && <><div><dt>Modeled local</dt><dd>{fmt(point.local)} ppm</dd></div><div><dt>Local difference</dt><dd>{fmt(point.local-point.cabin)} ppm</dd></div></>}
           <div><dt>Sample time</dt><dd>{point.t} s</dd></div>
         </dl>
-        <CabinDiagram point={point} sensors={s.sensors} airflow={air} heat={heat} coverage={coverage} hidden={masked} playing={s.running} ventilation={s.settings.ventilation} onMove={lab ? move : undefined}/>
-        <div className="playbar"><button className="primary" disabled={solver.pending || (!s.running && latest.t>=3600)} onClick={()=>set({running:!s.running})}>{s.running ? <Pause size={15}/> : <Play size={15}/>} {s.running ? 'Pause' : 'Run simulation'}</button>
-          <button aria-label="Reset simulation" title="Reset simulation" disabled={solver.pending} onClick={s.reset}><RotateCcw size={15}/></button>
-          <button disabled={solver.pending || s.running || latest.t>=3600} onClick={s.tick}>Step 1 s</button>
-          <select aria-label="Playback speed" value={s.speed} onChange={event=>set({speed:Number(event.target.value)})}>{[.5,1,2,4].map(speed=><option key={speed} value={speed}>{speed}×</option>)}</select>
-          <button disabled={solver.pending} onClick={()=>{
-            set({running:false})
-            solver.solve(points=>{setCursor(null);set({points,running:false})})
-          }}>{solver.pending ? 'Solving…' : 'Run 300 s'}</button><span className="mono end" title="Elapsed model time">{String(Math.floor(latest.t/60)).padStart(2,'0')}:{String(latest.t%60).padStart(2,'0')}</span></div>
-        {solver.pending && <div className="solve-placeholder" role="status">Computing the 300-second run…</div>}
-
-        <p className="schematic-disclosure">AI-assisted cartoon illustration · Two-compartment schematic, not a helmet simulation.</p>
-        <p className="simulation-caption">{hidden ? 'The cabin sensor is all you can see. Reveal the modeled breathing zone to compare.' : metrics.truth != null && metrics.alert == null ? 'The modeled breathing zone crossed the demo threshold. The current sensors have yet to alert.' : metrics.truth != null && metrics.alert != null ? `The modeled zone crossed at ${metrics.truth} s. A sensor first alerted at ${metrics.alert} s.` : 'The modeled breathing zone is below the demonstration threshold so far.'}</p>
-      </section>
-      <details className="panel readouts" open><summary>Telemetry</summary>
-        <div className="panel-title"><AudioLines size={16}/> Live telemetry <span className={'end live '+(s.running ? 'active' : '')} aria-label={s.running ? 'Running' : 'Paused'}/></div>
-        <div className="panel-pad">
-          <div className="metric"><span>Cabin CO₂</span><strong>{fmt(point.cabin)} <small>ppm</small></strong></div>
-          <div className="metric local"><span>Breathing-zone CO₂</span><strong>{hidden ? 'Masked' : <>{fmt(point.local)} <small>ppm</small></>}</strong></div>
-          <div className="metric compact"><span>Local − cabin</span><strong>{hidden ? '—' : fmt(point.local-point.cabin)} <small>ppm</small></strong></div>
-          <div className="rail-chart"><TelemetryChart data={s.points} series={[{key:'cabin',label:'Cabin'},...(!hidden ? [{key:'local',label:'Breathing zone'}] : [])]} unit="ppm" cursor={point.t}/></div>
-          <div className="divider"/>
-          <div className="subheading">VIRTUAL SENSORS</div>
-          {s.sensors.map(sensor=><div className="sensor-read" key={sensor.id}><span>{sensor.id} · {hidden ? 'Virtual' : zoneName(sensor)}</span><b>{fmt(reading(point,sensor,s.noise))} ppm</b></div>)}
-          {!hidden && metrics.truth != null && metrics.alert == null && <div className="notice">Local crossing missed by sensors</div>}
-          <section className="evidence-panel" aria-label="Recommended actions">
-            <h3>Recommended actions</h3>
-            <ul className="model-actions">
-              {hidden ? <li><strong>Hold</strong> Reveal the modeled zone to assess detection.</li>
-                : metrics.truth != null && metrics.alert == null ? <li><strong>Critical · demo</strong> The local crossing went undetected. Compare with a sensor in the breathing zone.</li>
-                : metrics.truth != null ? <li><strong>Info</strong> Compare the first alert with the first local crossing to assess timing.</li>
-                : <li><strong>Info</strong> Run a longer comparison or try reduced ventilation to investigate when local CO₂ crosses the demo threshold.</li>}
-            </ul>
-          </section>
-          <details className="model-details"><summary>Model assumptions &amp; evidence</summary><ModelEvidence settings={s.settings}/></details>
-        </div>
-      </details>
-    </div>
+        <div className="detection-readout" role="status">{metrics.alert != null ? `Detected at ${metrics.alert} s` : `Not detected in ${latest.t} s`}<small>Current sensor layout · experiment threshold</small></div>
     <section ref={chart} id="co2-timeline" className="panel timeline">
       <div className="panel-title"><Activity size={16}/> CO₂ timeline <span className="micro end">MODEL OUTPUT · PPM</span></div>
       <div className="panel-pad">
@@ -220,11 +182,49 @@ export function Workbench({lab = false}: {lab?: boolean}) {
           <label className="field">Inspect sample · {point.t} s<input type="range" min={0} max={s.points.length-1} disabled={s.running || s.points.length<2} value={point.t} onChange={event=>setCursor(Number(event.target.value))}/></label>
           {cursor !== null && <button onClick={()=>setCursor(null)}>Return to latest</button>}
         </div>
-        <TelemetryChart cursor={point.t} data={chartData} series={[{key:'cabin',label:'Cabin'},...(!hidden?[{key:'local',label:'Breathing zone'}]:[]),...(compare && !hidden ? [{key:'baselineLocal',label:'Baseline breathing zone'}] : [])]} unit="ppm" threshold={hidden ? undefined : threshold}/>
+        <TelemetryChart cursor={point.t} data={sensorChartData} series={[{key:'cabin',label:'Cabin'},...s.sensors.map(sensor=>({key:sensor.id,label:sensor.id+' sensor'})),...(!hidden?[{key:'local',label:'Breathing zone'}]:[]),...(compare && !hidden ? [{key:'baselineLocal',label:'Baseline breathing zone'}] : [])]} unit="ppm" threshold={threshold} events={[{time:metrics.alert,label:'First sensor detection'},...(!hidden ? [{time:metrics.truth,label:'First local crossing'}] : [])]}/>
         {!hidden && <p>At {point.t} s, local CO₂ is {fmt(Math.abs(point.local-point.cabin))} ppm {point.local>=point.cabin ? 'above or equal to' : 'below'} the cabin reading. Ventilation mixes the two air volumes, while activity adds CO₂ near the astronaut.</p>}
         <span className="sr-only" role="status">{!s.running && !hidden ? `Paused at ${point.t} seconds. Local CO₂ ${fmt(point.local)} ppm.` : ''}</span>
       </div>
     </section>
+        <CabinDiagram point={point} sensors={s.sensors} airflow={false} heat={heat} coverage={coverage} hidden={masked} playing={s.running} ventilation={s.settings.ventilation} onMove={lab ? move : undefined}/>
+        <div className="playbar"><button className="primary" disabled={solver.pending || (!s.running && latest.t>=3600)} onClick={()=>set({running:!s.running})}>{s.running ? <Pause size={15}/> : <Play size={15}/>} {s.running ? 'Pause' : 'Run simulation'}</button>
+          <button aria-label="Reset simulation" title="Reset simulation" disabled={solver.pending} onClick={s.reset}><RotateCcw size={15}/></button>
+          <button disabled={solver.pending || s.running || latest.t>=3600} onClick={s.tick}>Step 1 s</button>
+          <select aria-label="Playback speed" value={s.speed} onChange={event=>set({speed:Number(event.target.value)})}>{[.5,1,2,4].map(speed=><option key={speed} value={speed}>{speed}×</option>)}</select>
+          <button disabled={solver.pending} onClick={()=>{
+            set({running:false})
+            solver.solve(points=>{setCursor(null);set({points,running:false})})
+          }}>{solver.pending ? 'Solving…' : 'Run 300 s'}</button><span className="mono end" title="Elapsed model time">{String(Math.floor(latest.t/60)).padStart(2,'0')}:{String(latest.t%60).padStart(2,'0')}</span></div>
+        {solver.pending && <div className="solve-placeholder" role="status">Computing the 300-second run…</div>}
+
+        <p className="schematic-disclosure">Conceptual schematic, not a spatial simulation. AI-assisted cartoon illustration.</p>
+        <p className="simulation-caption">{hidden ? 'The cabin sensor is all you can see. Reveal the modeled breathing zone to compare.' : metrics.truth != null && metrics.alert == null ? 'The modeled breathing zone crossed the demo threshold. The current sensors have yet to alert.' : metrics.truth != null && metrics.alert != null ? `The modeled zone crossed at ${metrics.truth} s. A sensor first alerted at ${metrics.alert} s.` : 'The modeled breathing zone is below the demonstration threshold so far.'}</p>
+      </section>
+      <details className="panel readouts" open><summary>Telemetry</summary>
+        <div className="panel-title"><AudioLines size={16}/> Live telemetry <span className={'end live '+(s.running ? 'active' : '')} aria-label={s.running ? 'Running' : 'Paused'}/></div>
+        <div className="panel-pad">
+          <div className="metric"><span>Cabin CO₂</span><strong>{fmt(point.cabin)} <small>ppm</small></strong></div>
+          <div className="metric local"><span>Breathing-zone CO₂</span><strong>{hidden ? 'Masked' : <>{fmt(point.local)} <small>ppm</small></>}</strong></div>
+          <div className="metric compact"><span>Local − cabin</span><strong>{hidden ? '—' : fmt(point.local-point.cabin)} <small>ppm</small></strong></div>
+          <div className="rail-chart"><TelemetryChart data={s.points} series={[{key:'cabin',label:'Cabin'},...(!hidden ? [{key:'local',label:'Breathing zone'}] : [])]} unit="ppm" cursor={point.t}/></div>
+          <div className="divider"/>
+          <div className="subheading">VIRTUAL SENSORS</div>
+          {s.sensors.map(sensor=><div className="sensor-read" key={sensor.id}><span>{sensor.id} · {hidden ? 'Virtual' : zoneName(sensor)}</span><b>{fmt(reading(point,sensor,s.noise))} ppm</b></div>)}
+          {!hidden && metrics.truth != null && metrics.alert == null && <div className="notice">Local crossing missed by sensors</div>}
+          <section className="evidence-panel" aria-label="Recommended actions">
+            <h3>Recommended actions</h3>
+            <ul className="model-actions">
+              {hidden ? <li><strong>Hold</strong> Reveal the modeled zone to assess detection.</li>
+                : metrics.truth != null && metrics.alert == null ? <li><strong>Finding · demo</strong> The local crossing went undetected. Compare with a sensor in the breathing zone.</li>
+                : metrics.truth != null ? <li><strong>Info</strong> Compare the first alert with the first local crossing to assess timing.</li>
+                : <li><strong>Info</strong> Run a longer comparison or try reduced ventilation to investigate when local CO₂ crosses the demo threshold.</li>}
+            </ul>
+          </section>
+          <details className="model-details"><summary>Model assumptions &amp; evidence</summary><ModelEvidence settings={s.settings}/></details>
+        </div>
+      </details>
+    </div>
     <MeasurementCatalog points={s.points} sensors={s.sensors} noise={s.noise} masked={hidden}/>
     <details className="panel section">
       <summary>Run measurements</summary>
