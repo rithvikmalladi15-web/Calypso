@@ -8,9 +8,9 @@ export function reading(p: Point, s: Sensor, noise = 0) {
   return Math.max(0, (isLocal(s) ? p.local : p.cabin) + noise * Math.sin(p.t * 2.37 + s.id.charCodeAt(s.id.length - 1)))
 }
 export const threshold = 1250
-export function detect(points: Point[], sensors: Sensor[], noise = 0) {
-  const truth = points.find(p => p.local >= threshold)?.t
-  const alert = points.find(p => sensors.some(s => reading(p, s, noise) >= threshold))?.t
+export function detect(points: Point[], sensors: Sensor[], noise = 0, limit = threshold) {
+  const truth = points.find(p => p.local >= limit)?.t
+  const alert = points.find(p => sensors.some(s => reading(p, s, noise) >= limit))?.t
   const meanError = points.reduce((sum, p) => sum + Math.abs(p.local - Math.max(...sensors.map(s => reading(p, s, noise)))), 0) / points.length
   return { truth, alert, meanError, delay: truth != null && alert != null ? alert - truth : null }
 }

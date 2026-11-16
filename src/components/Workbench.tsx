@@ -1,3 +1,4 @@
+import { Robustness } from './Robustness'
 import { MeasurementCatalog } from './MeasurementCatalog'
 import { ModelEvidence } from './ModelEvidence'
 import { useScenarioSolver } from '../simulation/useScenarioSolver'
@@ -225,6 +226,7 @@ export function Workbench({lab = false}: {lab?: boolean}) {
         </div>
       </details>
     </div>
+    <Robustness/>
     <MeasurementCatalog points={s.points} sensors={s.sensors} noise={s.noise} masked={hidden}/>
     <details className="panel section">
       <summary>Run measurements</summary>
