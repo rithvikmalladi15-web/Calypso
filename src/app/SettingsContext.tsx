@@ -29,11 +29,12 @@ function restore(): Preferences {
   } catch { /* Defaults also work when storage is disabled. */ }
   return fallback
 }
-const SettingsContext = createContext<{preferences:Preferences; update:(patch:Partial<Preferences>)=>void; reset:()=>void} | null>(null)
+const SettingsContext = createContext<{preferences:Preferences; update:(patch:Partial<Preferences>)=>void; reset:()=>void; setFieldStress:(value:number|null)=>void} | null>(null)
 export function SettingsProvider({children}:{children:ReactNode}) {
   const [preferences,setPreferences] = useState(restore)
+  const [fieldStress,setFieldStress] = useState<number|null>(null)
   const stress = useSim(state=>Math.round((1-state.settings.ventilation)*10)/10)
-  useAmbientAudio(preferences,stress)
+  useAmbientAudio(preferences,fieldStress ?? stress)
   useLayoutEffect(()=>{
     try { localStorage.setItem(key,JSON.stringify({version:1,values:preferences})) } catch { /* Storage is optional. */ }
     const root = document.documentElement
@@ -43,7 +44,7 @@ export function SettingsProvider({children}:{children:ReactNode}) {
     root.dataset.quality = preferences.quality.toLowerCase()
     root.dataset.animation = preferences.animation.toLowerCase()
   },[preferences])
-  return <SettingsContext.Provider value={{preferences,update:patch=>setPreferences(previous=>({...previous,...patch})),reset:()=>setPreferences(defaults())}}>{children}</SettingsContext.Provider>
+  return <SettingsContext.Provider value={{preferences,update:patch=>setPreferences(previous=>({...previous,...patch})),reset:()=>setPreferences(defaults()),setFieldStress}}>{children}</SettingsContext.Provider>
 }
 export function usePreferences() {
   const context = useContext(SettingsContext)

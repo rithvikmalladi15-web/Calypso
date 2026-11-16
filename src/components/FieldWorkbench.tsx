@@ -17,7 +17,9 @@ const controls = [
 ] as const
 
 export function FieldWorkbench({compact=false}:{compact?:boolean}) {
-  const reducedMotion = usePreferences()?.preferences.reducedMotion ?? false
+  const preferences = usePreferences()
+  const reducedMotion = preferences?.preferences.reducedMotion ?? false
+  const setFieldStress = preferences?.setFieldStress
   const [settings,setSettings] = useState<Settings>(()=>!compact && readScenario(location.hash) || presets['Reduced ventilation'])
   const [positions,setPositions] = useState<Cell[]>(()=>!compact && readFieldSensors(location.hash,columns,rows) || [wall])
   const [time,setTime] = useState(0)
@@ -33,6 +35,7 @@ export function FieldWorkbench({compact=false}:{compact?:boolean}) {
   const canvas = useRef<HTMLCanvasElement>(null)
   const {result,pending} = useField(settings)
   const frame = result?.frames[time]
+  const wallTime = result?.firstCrossing[cellIndex(wall)]
   const recommendedTime = result?.recommendation ? result.firstCrossing[cellIndex(result.recommendation)] : null
   useEffect(()=>{
     if (compact) return
@@ -50,6 +53,12 @@ export function FieldWorkbench({compact=false}:{compact?:boolean}) {
   const local = frame ? valueAt(frame,crew) : initialPpm
   const sensor = frame ? valueAt(frame,positions[0]) : initialPpm
   const error = local-sensor
+  const stress = Math.max(0,Math.min(1,Math.round((local-initialPpm)/180)/10))
+  useEffect(()=>{
+    if (compact || !setFieldStress) return
+    setFieldStress(stress)
+    return ()=>setFieldStress(null)
+  },[compact,setFieldStress,stress])
   const trace = useMemo(()=>result?.frames.map((sample,t)=>({
     t,local:valueAt(sample,crew),s1:valueAt(sample,positions[0]),
     ...(positions[1] ? {s2:valueAt(sample,positions[1])} : {}),
@@ -100,12 +109,13 @@ export function FieldWorkbench({compact=false}:{compact?:boolean}) {
     : local>=demoThresholdPpm ? 'The breathing zone and S1 are both at or above the demo threshold.'
     : 'Follow the field around the crew marker as CO₂ is added and transported through the cabin.'
   const ready = !!frame && !pending
+  const crewCrossing = result?.firstCrossing[cellIndex(crew)] ?? -1
 
   if(compact) return <figure className="overview-hero-preview">
     {frame ? <ConcentrationField frame={frame} positions={positions} recommendation={null} detection={null} canvas={canvas} upperPpm={upperPpm}/>
       : <p className="panel-pad" role="status">Preparing baseline field…</p>}
     <figcaption>Reduced-ventilation model{reducedMotion ? ' · static preview' : ' · looping preview'}</figcaption>
-    {result && <dl className="instrument-strip"><div><dt>Crew first crossing</dt><dd>{result.firstCrossing[cellIndex(crew)]} s</dd></div><div><dt>Wall sensor</dt><dd>No alert in {fieldDuration} s</dd></div><div><dt>Earliest eligible cell</dt><dd>{recommendedTime==null ? 'No alert' : recommendedTime+' s'}</dd></div></dl>}
+    {result && <dl className="instrument-strip"><div><dt>Crew first crossing</dt><dd>{crewCrossing < 0 ? 'No alert' : crewCrossing+' s'}</dd></div><div><dt>Wall sensor</dt><dd>{wallTime != null && wallTime >= 0 ? wallTime+' s' : 'No alert in '+fieldDuration+' s'}</dd></div><div><dt>Earliest eligible cell</dt><dd>{recommendedTime==null ? 'No alert' : recommendedTime+' s'}</dd></div></dl>}
   </figure>
 
   return <div className="field-workspace">
