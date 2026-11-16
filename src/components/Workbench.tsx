@@ -112,6 +112,7 @@ export function Workbench({lab = false}: {lab?: boolean}) {
           <label className="range-label"><span>Ventilation <b>{fmt(s.settings.ventilation*100)}%</b></span><input title="Air mixing strength. Baseline: 65%." type="range" min="0" max="100" value={s.settings.ventilation*100} onChange={e=>settings('ventilation',+e.target.value/100)}/></label>
           <label className="range-label"><span>CO₂ removal <b>{fmt(s.settings.scrubber*100)}%</b></span><input title="Cabin CO₂ removal strength. Baseline: 65%." type="range" min="0" max="100" value={s.settings.scrubber*100} onChange={e=>settings('scrubber',+e.target.value/100)}/></label>
           <label className="range-label"><span>Relative activity <b>{s.settings.activity.toFixed(1)}×</b></span><input title="CO₂ production relative to resting activity. Baseline: 1×." type="range" min="0" max="3" step=".1" value={s.settings.activity} onChange={e=>settings('activity',+e.target.value)}/></label>
+          <button onClick={()=>{s.select('Baseline');setStatus('Baseline parameters restored.')}}>Reset parameters</button>
           {!lab && <><button onClick={()=>void copyScenario()}>Copy scenario link</button>{sharedLink && <label className="field">Scenario URL<input value={sharedLink} readOnly onFocus={event=>event.target.select()}/></label>}</>}
           <div className="divider"/>
           <div className="subheading">VIEW LAYERS</div>
