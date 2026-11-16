@@ -14,7 +14,7 @@ export function useScenarioSolver(settings:Settings) {
     }
   },[settings])
 
-  function solve(complete:(points:Point[])=>void) {
+  function solve(complete:(points:Point[])=>void,seconds=300) {
     function finish(points:Point[], elapsed:number) {
       worker.current?.terminate()
       worker.current = null
@@ -24,7 +24,7 @@ export function useScenarioSolver(settings:Settings) {
     }
     function inline() {
       const start = performance.now()
-      const points = run(settings)
+      const points = run(settings,seconds)
       finish(points,performance.now()-start)
     }
     if (typeof Worker === 'undefined') { inline(); return }
@@ -39,7 +39,7 @@ export function useScenarioSolver(settings:Settings) {
         event.preventDefault()
         if(worker.current === task) inline()
       }
-      task.postMessage(settings)
+      task.postMessage({settings,seconds})
     } catch { inline() }
   }
   return {solve,pending,milliseconds}

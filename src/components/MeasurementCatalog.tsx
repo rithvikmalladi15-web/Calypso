@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import type { Point } from '../simulation/engine'
-import { isLocal, reading, threshold, type Sensor } from '../simulation/sensorModel'
+import { isLocal, reading, type Sensor } from '../simulation/sensorModel'
 
 const statistics = ['First sample','Last sample','Net change','Minimum','Maximum','Mean','Median','10th percentile','90th percentile','Standard deviation'] as const
 const channels = [
@@ -30,8 +30,8 @@ function summarize(samples:number[]) {
   return [first,last,last-first,sorted[0],sorted[sorted.length-1],mean,percentile(.5),percentile(.1),percentile(.9),deviation]
 }
 
-export function MeasurementCatalog({points,sensors,noise,masked}:{
-  points:Point[]; sensors:Sensor[]; noise:number; masked:boolean
+export function MeasurementCatalog({points,sensors,noise,masked,threshold=1250}:{
+  points:Point[]; sensors:Sensor[]; noise:number; masked:boolean; threshold?:number
 }) {
   const [selection,setSelection] = useState(0)
   const index = masked && channels[selection].local ? 0 : selection
@@ -55,7 +55,7 @@ export function MeasurementCatalog({points,sensors,noise,masked}:{
       if (value!==undefined) samples.push(value)
     }
     return summarize(samples)
-  },[points,sensors,noise,masked,index])
+  },[points,sensors,noise,masked,threshold,index])
 
   return <details className="panel section">
     <summary>Measurement catalog · {channels.filter(item=>!masked || !item.local).length*statistics.length} metrics</summary>

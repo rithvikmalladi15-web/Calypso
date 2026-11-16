@@ -1,3 +1,4 @@
+import { thresholds } from '../simulation/thresholds'
 import { Robustness } from './Robustness'
 import { MeasurementCatalog } from './MeasurementCatalog'
 import { ModelEvidence } from './ModelEvidence'
@@ -9,13 +10,17 @@ import { Activity, ArrowDownToLine, AudioLines, Crosshair, Eye, EyeOff, Layers3,
 import { CabinDiagram, zoneName } from './CabinDiagram'
 import { TelemetryChart } from './TelemetryChart'
 import { initial, presets, run, type Settings } from '../simulation/engine'
-import { cabinSensor, detect, isLocal, localSensor, reading, threshold } from '../simulation/sensorModel'
+import { cabinSensor, detect, isLocal, localSensor, reading } from '../simulation/sensorModel'
 import { useSim } from '../stores/simulationStore'
 import { snapshot, useExperiments } from '../stores/experimentStore'
 
+const latestDuration = (points: {t:number}[]) => (points.at(-1)?.t??0)-(points[0]?.t??0)
 const fmt = (n: number) => Math.round(n).toLocaleString()
 export function Workbench({lab = false}: {lab?: boolean}) {
   const s = useSim()
+  const rule = thresholds[s.thresholdId]
+  const threshold = rule.ppm
+  const eligible = latestDuration(s.points) >= rule.windowSeconds
   const set = useSim.setState
   const solver = useScenarioSolver(s.settings)
   const [cursor, setCursor] = useState<number | null>(null)
@@ -108,10 +113,10 @@ export function Workbench({lab = false}: {lab?: boolean}) {
       localMean:duration>0 ? localIntegral/duration : first.local,
       cabinChange:last.cabin-first.cabin,localChange:last.local-first.local}
   }, [s.points])
-  const metrics = detect(s.points,s.sensors,s.noise)
+  const metrics = detect(s.points,s.sensors,s.noise,threshold,rule.windowSeconds)
   const candidates = lab && !hidden ? [
-    { name:'Cabin-only layout', error:detect(s.points,[cabinSensor],s.noise).meanError },
-    { name:'Two-zone layout', error:detect(s.points,[cabinSensor,localSensor],s.noise).meanError },
+    { name:'Cabin-only layout', error:detect(s.points,[cabinSensor],s.noise,threshold,rule.windowSeconds).meanError },
+    { name:'Two-zone layout', error:detect(s.points,[cabinSensor,localSensor],s.noise,threshold,rule.windowSeconds).meanError },
   ].sort((a,b)=>a.error-b.error) : []
   const move = (id: string,x: number,y: number) => set(state=>({sensors:state.sensors.map(sensor=>sensor.id===id ? {...sensor,x:Math.max(.08,Math.min(.92,x)),y:Math.max(.12,Math.min(.88,y))} : sensor)}))
   function settings(key: keyof Settings,value: number) {
@@ -123,7 +128,7 @@ export function Workbench({lab = false}: {lab?: boolean}) {
   }
   function save() {
     try {
-      useExperiments.getState().save(snapshot(s.scenario,s.settings,s.sensors,s.points,s.noise))
+      useExperiments.getState().save(snapshot(s.scenario,s.settings,s.sensors,s.points,s.noise,s.thresholdId))
       setStatus('Experiment saved locally.')
     } catch { setStatus('Experiment storage is unavailable or full.') }
   }
@@ -142,6 +147,9 @@ export function Workbench({lab = false}: {lab?: boolean}) {
             <p>Custom starts with the current settings. Changing a value pauses the run and resets its clock. Select Run 300 s to test your settings.</p>
             <button type="button" onClick={editCustom}>Edit custom settings</button>
           </div>}
+          <label className="field">Threshold reference<select value={s.thresholdId} onChange={e=>set({thresholdId:e.target.value as keyof typeof thresholds})}>{Object.entries(thresholds).map(([id,item])=><option key={id} value={id}>{item.label}</option>)}</select></label>
+          <p title={rule.description}>{rule.description} {rule.source && <a href={rule.source} target="_blank" rel="noreferrer" title={rule.description}>NASA source ↗</a>}</p>
+          {rule.windowSeconds>0 && <p>{eligible?'Full averaging window available.':'Insufficient duration: 3,600 s required for a full one-hour average.'} The raw chart reference is approximately {Math.round(threshold).toLocaleString()} ppm at assumed sea-level pressure. TODO: verify mission-specific off-nominal limits before adding them.</p>}
           <div className="subheading">MODEL PARAMETERS</div>
           <label className="range-label"><span>Ventilation <b>{fmt(s.settings.ventilation*100)}%</b></span><input ref={ventilationInput} title="Air mixing strength. Baseline: 65%." type="range" min="0" max="100" value={s.settings.ventilation*100} onChange={e=>settings('ventilation',+e.target.value/100)}/></label>
           <label className="range-label"><span>CO₂ removal <b>{fmt(s.settings.scrubber*100)}%</b></span><input title="Cabin CO₂ removal strength. Baseline: 65%." type="range" min="0" max="100" value={s.settings.scrubber*100} onChange={e=>settings('scrubber',+e.target.value/100)}/></label>
@@ -164,7 +172,7 @@ export function Workbench({lab = false}: {lab?: boolean}) {
           {!masked && <><div><dt>Modeled local</dt><dd>{fmt(point.local)} ppm</dd></div><div><dt>Local difference</dt><dd>{fmt(point.local-point.cabin)} ppm</dd></div></>}
           <div><dt>Sample time</dt><dd>{point.t} s</dd></div>
         </dl>
-        <div className="detection-readout" role="status">{metrics.alert != null ? `Detected at ${metrics.alert} s` : `Not detected in ${latest.t} s`}<small>Current sensor layout · experiment threshold</small></div>
+        <div className="detection-readout" role="status">{!eligible ? 'Awaiting 1 h of samples' : metrics.alert != null ? `Detected at ${metrics.alert} s` : `Not detected in ${latest.t} s`}<small>Current sensor layout · {rule.windowSeconds ? "one-hour average reference" : "demo rule"}</small></div>
     <section ref={chart} id="co2-timeline" className="panel timeline">
       <div className="panel-title"><Activity size={16}/> CO₂ timeline <span className="micro end">MODEL OUTPUT · PPM</span></div>
       <div className="panel-pad">
@@ -183,7 +191,7 @@ export function Workbench({lab = false}: {lab?: boolean}) {
           <label className="field">Inspect sample · {point.t} s<input type="range" min={0} max={s.points.length-1} disabled={s.running || s.points.length<2} value={point.t} onChange={event=>setCursor(Number(event.target.value))}/></label>
           {cursor !== null && <button onClick={()=>setCursor(null)}>Return to latest</button>}
         </div>
-        <TelemetryChart cursor={point.t} data={sensorChartData} series={[{key:'cabin',label:'Cabin'},...s.sensors.map(sensor=>({key:sensor.id,label:sensor.id+' sensor'})),...(!hidden?[{key:'local',label:'Breathing zone'}]:[]),...(compare && !hidden ? [{key:'baselineLocal',label:'Baseline breathing zone'}] : [])]} unit="ppm" threshold={threshold} events={[{time:metrics.alert,label:'First sensor detection'},...(!hidden ? [{time:metrics.truth,label:'First local crossing'}] : [])]}/>
+        <TelemetryChart cursor={point.t} data={sensorChartData} series={[{key:'cabin',label:'Cabin'},...s.sensors.map(sensor=>({key:sensor.id,label:sensor.id+' sensor'})),...(!hidden?[{key:'local',label:'Breathing zone'}]:[]),...(compare && !hidden ? [{key:'baselineLocal',label:'Baseline breathing zone'}] : [])]} unit="ppm" threshold={threshold} thresholdLabel={rule.windowSeconds ? "NASA reference · 1 h average" : "Demo rule"} events={[{time:metrics.alert,label:'First sensor detection'},...(!hidden ? [{time:metrics.truth,label:'First local crossing'}] : [])]}/>
         {!hidden && <p>At {point.t} s, local CO₂ is {fmt(Math.abs(point.local-point.cabin))} ppm {point.local>=point.cabin ? 'above or equal to' : 'below'} the cabin reading. Ventilation mixes the two air volumes, while activity adds CO₂ near the astronaut.</p>}
         <span className="sr-only" role="status">{!s.running && !hidden ? `Paused at ${point.t} seconds. Local CO₂ ${fmt(point.local)} ppm.` : ''}</span>
       </div>
@@ -196,11 +204,11 @@ export function Workbench({lab = false}: {lab?: boolean}) {
           <button disabled={solver.pending} onClick={()=>{
             set({running:false})
             solver.solve(points=>{setCursor(null);set({points,running:false})})
-          }}>{solver.pending ? 'Solving…' : 'Run 300 s'}</button><span className="mono end" title="Elapsed model time">{String(Math.floor(latest.t/60)).padStart(2,'0')}:{String(latest.t%60).padStart(2,'0')}</span></div>
-        {solver.pending && <div className="solve-placeholder" role="status">Computing the 300-second run…</div>}
+          }}>{solver.pending ? 'Solving…' : 'Run 300 s'}</button>{rule.windowSeconds>0 && <button disabled={solver.pending} onClick={()=>{set({running:false});solver.solve(points=>set({points,running:false}),3600)}}>Run 3,600 s</button>}<span className="mono end" title="Elapsed model time">{String(Math.floor(latest.t/60)).padStart(2,'0')}:{String(latest.t%60).padStart(2,'0')}</span></div>
+        {solver.pending && <div className="solve-placeholder" role="status">Computing the run…</div>}
 
         <p className="schematic-disclosure">Conceptual schematic, not a spatial simulation. AI-assisted cartoon illustration.</p>
-        <p className="simulation-caption">{hidden ? 'The cabin sensor is all you can see. Reveal the modeled breathing zone to compare.' : metrics.truth != null && metrics.alert == null ? 'The modeled breathing zone crossed the demo threshold. The current sensors have yet to alert.' : metrics.truth != null && metrics.alert != null ? `The modeled zone crossed at ${metrics.truth} s. A sensor first alerted at ${metrics.alert} s.` : 'The modeled breathing zone is below the demonstration threshold so far.'}</p>
+        <p className="simulation-caption">{hidden ? 'The cabin sensor is all you can see. Reveal the modeled breathing zone to compare.' : metrics.truth != null && metrics.alert == null ? 'The modeled breathing zone crossed the selected reference. The current sensors have yet to alert.' : metrics.truth != null && metrics.alert != null ? `The modeled zone crossed at ${metrics.truth} s. A sensor first alerted at ${metrics.alert} s.` : !eligible ? 'A complete one-hour averaging window is required before assessing this reference.' : 'No modeled local crossing of the selected reference so far.'}</p>
       </section>
       <details className="panel readouts" open><summary>Telemetry</summary>
         <div className="panel-title"><AudioLines size={16}/> Live telemetry <span className={'end live '+(s.running ? 'active' : '')} aria-label={s.running ? 'Running' : 'Paused'}/></div>
@@ -219,7 +227,7 @@ export function Workbench({lab = false}: {lab?: boolean}) {
               {hidden ? <li><strong>Hold</strong> Reveal the modeled zone to assess detection.</li>
                 : metrics.truth != null && metrics.alert == null ? <li><strong>Finding · demo</strong> The local crossing went undetected. Compare with a sensor in the breathing zone.</li>
                 : metrics.truth != null ? <li><strong>Info</strong> Compare the first alert with the first local crossing to assess timing.</li>
-                : <li><strong>Info</strong> Run a longer comparison or try reduced ventilation to investigate when local CO₂ crosses the demo threshold.</li>}
+                : <li><strong>Info</strong> Run a longer comparison or try reduced ventilation to investigate when local CO₂ crosses the selected reference.</li>}
             </ul>
           </section>
           <details className="model-details"><summary>Model assumptions &amp; evidence</summary><ModelEvidence settings={s.settings}/></details>
@@ -227,7 +235,7 @@ export function Workbench({lab = false}: {lab?: boolean}) {
       </details>
     </div>
     <Robustness/>
-    <MeasurementCatalog points={s.points} sensors={s.sensors} noise={s.noise} masked={hidden}/>
+    <MeasurementCatalog points={s.points} sensors={s.sensors} noise={s.noise} masked={hidden} threshold={threshold}/>
     <details className="panel section">
       <summary>Run measurements</summary>
       <p><a href="#/crew-health">Explore how spaceflight affects the body ↗</a></p>
@@ -260,9 +268,9 @@ export function Workbench({lab = false}: {lab?: boolean}) {
       </>}
     </details>
     <details className="panel section" open><summary>{lab ? "Sensor placement and detection" : "Detection events"}</summary>
-      <div className="section-title"><h2>{lab ? 'Sensor placement' : 'Detection events'}</h2>{lab && <button onClick={()=>{if(!hidden) {s.select('Reduced ventilation'); set({sensors:[cabinSensor]})} hide(!hidden); setInstrument(hidden ? 'local' : 'cabin')}}>{hidden ? <Eye size={16}/> : <EyeOff size={16}/>} {hidden?'Reveal modeled zone':'Start masked exercise'}</button>}</div>
-      <p>First sample at or above {threshold.toLocaleString()} ppm triggers an educational alert. Layout and noise changes are evaluated against the entire recorded run.</p>
-      <div className="stats"><div>First sensor alert <b>{metrics.alert != null ? metrics.alert+' s' : 'None'}</b></div>{!hidden && <><div>Peak local CO₂ <b>{fmt(peak)} ppm</b></div><div>Time at or above threshold <b>{timeAbove.toFixed(1)} s</b></div><div>First local crossing <b>{metrics.truth != null ? metrics.truth+' s' : 'None'}</b></div><div>Mean absolute error <b>{fmt(metrics.meanError)} ppm</b></div><div>Alert minus crossing <b>{metrics.delay != null ? metrics.delay+' s' : metrics.truth != null ? 'Missed' : 'No local crossing'}</b></div></>}</div>
+      <div className="section-title"><h2>{lab ? 'Sensor placement' : 'Detection events'}</h2>{lab && <button onClick={()=>{if(!hidden) {s.select('Reduced ventilation'); set({sensors:[cabinSensor],thresholdId:'demo'})} hide(!hidden); setInstrument(hidden ? 'local' : 'cabin')}}>{hidden ? <Eye size={16}/> : <EyeOff size={16}/>} {hidden?'Reveal modeled zone':'Start masked exercise'}</button>}</div>
+      <p>The {rule.windowSeconds ? "one-hour time-weighted average" : "first sample"} at or above {Math.round(threshold).toLocaleString()} ppm triggers a model alert. This is not a compliance assessment. Layout and noise changes are evaluated against the entire recorded run.</p>
+      <div className="stats"><div>First sensor alert <b>{metrics.alert != null ? metrics.alert+' s' : 'None'}</b></div>{!hidden && <><div>Peak local CO₂ <b>{fmt(peak)} ppm</b></div><div>Raw concentration time above reference <b>{timeAbove.toFixed(1)} s</b></div><div>First local crossing <b>{metrics.truth != null ? metrics.truth+' s' : 'None'}</b></div><div>Mean absolute error <b>{fmt(metrics.meanError)} ppm</b></div><div>Alert minus crossing <b>{metrics.delay != null ? metrics.delay+' s' : metrics.truth != null ? 'Missed' : 'No local crossing'}</b></div></>}</div>
       {!hidden && <p>Duration uses linear interpolation between samples. Mean absolute error compares the highest sensor reading at each sample with modeled breathing-zone CO₂.</p>}
       {lab && <>
         <div className="actions"><button onClick={()=>set({sensors:[cabinSensor]})}>Cabin only</button><button onClick={()=>set({sensors:[cabinSensor,localSensor]})}>Cabin + breathing zone</button></div>

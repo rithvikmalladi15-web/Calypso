@@ -1,3 +1,4 @@
+import { thresholds } from '../simulation/thresholds'
 import { useState, type FormEvent } from 'react'
 import { routeHref } from '../app/router'
 import { explain } from '../ai/deterministicExplainer'
@@ -21,7 +22,7 @@ export function ExperimentsPage({report = false}: {report?:boolean}) {
     try { action(); setError('') } catch { setError('Local storage is unavailable or full.') }
   }
   function load(record: Experiment, replay: boolean) {
-    useSim.setState({scenario:record.scenario,settings:record.settings,sensors:record.sensors,noise:record.noise,points:replay ? run(record.settings,record.points.length-1) : record.points,running:false})
+    useSim.setState({thresholdId:record.thresholdId??'demo',scenario:record.scenario,settings:record.settings,sensors:record.sensors,noise:record.noise,points:replay ? run(record.settings,record.points.length-1) : record.points,running:false})
     location.hash=routeHref('Simulation')
   }
   function log(e: FormEvent) {
@@ -40,7 +41,7 @@ export function ExperimentsPage({report = false}: {report?:boolean}) {
         </div>
         <div className="actions">{report ? <button className="primary" onClick={()=>window.print()}>Print / Save PDF</button> : <>
           <button onClick={()=>load(current,false)}>Load run</button><button onClick={()=>load(current,true)}>Replay run</button>
-          <button onClick={()=>mutate(()=>{const copy=snapshot(current.scenario,current.settings,current.sensors,current.points,current.noise);save(copy);setSelected(copy.id)})}>Duplicate</button>
+          <button onClick={()=>mutate(()=>{const copy=snapshot(current.scenario,current.settings,current.sensors,current.points,current.noise,current.thresholdId);save(copy);setSelected(copy.id)})}>Duplicate</button>
           <button onClick={()=>mutate(()=>remove(current.id))}>Delete</button>
         </>}<button onClick={()=>downloadReport(current)}>Export JSON</button></div>
       </section>
@@ -49,7 +50,7 @@ export function ExperimentsPage({report = false}: {report?:boolean}) {
         return <section className="panel section" key={r.id}><span className="micro">{i?'COMPARISON':'PRIMARY'} · MODELED TELEMETRY</span><h2>{r.scenario}</h2><p>{r.date} · Model {r.version} · {last.t} s</p>
           <div className="stats"><div>Final cabin <b>{ppm(last.cabin)}</b></div><div>Final breathing zone <b>{ppm(last.local)}</b></div><div>Mean detection error <b>{ppm(r.metrics.meanError)}</b></div></div>
           <TelemetryChart data={r.points} series={[{key:'cabin',label:'Cabin'},{key:'local',label:'Breathing zone'}]} unit="ppm"/>
-          <h3>Reproducibility</h3><p>Initial cabin {ppm(r.initial.cabin)} · initial breathing zone {ppm(r.initial.local)} · ventilation {Math.round(r.settings.ventilation*100)}% · removal {Math.round(r.settings.scrubber*100)}% · source {r.settings.activity}× · noise {r.noise} ppm</p>
+          <h3>Reproducibility</h3><p>Reference: {thresholds[r.thresholdId??"demo"].label}. {thresholds[r.thresholdId??"demo"].description}</p><p>Initial cabin {ppm(r.initial.cabin)} · initial breathing zone {ppm(r.initial.local)} · ventilation {Math.round(r.settings.ventilation*100)}% · removal {Math.round(r.settings.scrubber*100)}% · source {r.settings.activity}× · noise {r.noise} ppm</p>
           <p>{r.sensors.map(s=>s.id+' ('+s.x.toFixed(2)+', '+s.y.toFixed(2)+')').join(' · ')}</p>
           <h3>Deterministic interpretation</h3>{explain(r).map(line=><p key={line}>{line}</p>)}
         </section>
