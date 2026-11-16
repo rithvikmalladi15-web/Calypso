@@ -26,3 +26,12 @@ Scrub to the first crossing and compare readings at that timestamp. Explain the 
 - On a phone, test the controls sheet, settings drawer, reduced motion, and keyboard navigation. Enable sound after a click, try mute, switch tabs, and refresh to test persistence.
 - Run Lighthouse against the production URL. Record the actual scores and address findings.
 - Fill in the About team details and the methodology model revision date. Add documented empirical validation if available.
+
+## Spatial workbench script (60 seconds)
+
+1. Open CALYPSO. Select **Run demo** and let the default reduced-ventilation run play. “This model tracks CO₂ in 576 cabin cells.”
+2. Pause and scrub forward. “CO₂ passes the demo trigger at the crew cell by 3 seconds. The wall sensor misses it during the full 120-second run.”
+3. Select **Best sensor placement**, then **Move sensor here**. “This virtual mounting cell detects the crossing at 31 seconds using the same modeled trajectory.”
+4. Show the traces and open **Model & evidence**. “We start from a real RR-1 observation. The field and placements are simulated.” Export the CSV or use the scenario link to replay the comparison.
+
+Spatial checks: verify drag, coordinate sliders, second-sensor add/remove, play/step/reset and every speed. Reopen a shared link and compare settings and cell coordinates. Verify canvas PNG and CSV downloads, the NASA reference toggle, the optional audio controls, and both models on mobile. Run Lighthouse against the deployed build. The older guided comparison is available under Sensor Lab.
