@@ -23,10 +23,11 @@ export function FieldWorkbench({compact=false}:{compact?:boolean}) {
   const [settings,setSettings] = useState<Settings>(()=>!compact && readScenario(location.hash) || presets['Reduced ventilation'])
   const [positions,setPositions] = useState<Cell[]>(()=>!compact && readFieldSensors(location.hash,columns,rows) || [wall])
   const [time,setTime] = useState(0)
-  const [playing,setPlaying] = useState(!reducedMotion)
-  const [loop,setLoop] = useState(true)
+  const [playing,setPlaying] = useState(compact && !reducedMotion)
+  const [loop,setLoop] = useState(false)
   const [speed,setSpeed] = useState(20)
   const [map,setMap] = useState(false)
+  const [tour,setTour] = useState<number|null>(null)
   const [status,setStatus] = useState('')
   const [shareLink,setShareLink] = useState('')
   const [showNasa,setShowNasa] = useState(false)
@@ -83,7 +84,7 @@ export function FieldWorkbench({compact=false}:{compact?:boolean}) {
   function apply(next:Settings) { setSettings(next); setTime(0); setPlaying(false); setMap(false) }
   function startDemo() {
     apply(presets['Reduced ventilation'])
-    setPositions([wall]);setSpeed(20);setLoop(true);setPlaying(true)
+    setPositions([wall]);setSpeed(20);setLoop(false);setPlaying(true)
   }
   async function share() {
     const url=new URL(scenarioUrl(settings))
@@ -104,6 +105,22 @@ export function FieldWorkbench({compact=false}:{compact?:boolean}) {
       else setStatus('Could not export the cabin view.')
     })
   }
+  useEffect(()=>{
+    if(tour===null)return
+    const escape=(event:KeyboardEvent)=>{if(event.key==='Escape')setTour(null)}
+    window.addEventListener('keydown',escape)
+    return ()=>window.removeEventListener('keydown',escape)
+  },[tour])
+  const tourSteps = [
+    {title:'One cabin reading does not tell the whole story.',text:'CO₂ is added at the crew cell. This illustrative model lets you test whether a sensor elsewhere detects the same change.',action:'Run the experiment'},
+    {title:'Compare the same moment in two places.',text:'At 120 seconds, compare S1 with the breathing zone. The dashed chart line is the local concentration. The 3,100 ppm threshold is an experiment rule, not a safety limit.',action:'Compare sensor placement'},
+    {title:'Change the measurement, not the experiment.',text:'S1 is now at the earliest-detecting eligible cell. The airflow, source and clock are unchanged. Compare its first detection with the wall sensor in the result below.',action:'Finish walkthrough'},
+  ]
+  function advanceTour() {
+    if(tour===0){apply(presets['Reduced ventilation']);setPositions([wall]);setTime(fieldDuration);setTour(1)}
+    else if(tour===1 && result?.recommendation){move(0,result.recommendation);setMap(true);setTour(2)}
+    else setTour(null)
+  }
   const caption = local>=demoThresholdPpm && sensor<demoThresholdPpm
     ? 'The breathing zone has crossed the demo threshold. S1 has yet to register it at this sample.'
     : local>=demoThresholdPpm ? 'The breathing zone and S1 are both at or above the demo threshold.'
@@ -120,9 +137,13 @@ export function FieldWorkbench({compact=false}:{compact?:boolean}) {
 
   return <div className="field-workspace">
     <header className="field-header">
-      <h1>Can moving one sensor reveal a CO₂ buildup?</h1>
-      <div className="actions"><button className="primary" onClick={startDemo}>Run demo</button><span role="status">{pending ? 'Solving' : playing ? 'Playing' : 'Paused'} · {time} s</span></div>
+      <div><span className="workbench-kicker">Environmental observatory / Experiment 01</span><h1>See what a cabin sensor misses.</h1><p>Trace CO₂ around the crew. Test where a sensor makes a difference.</p></div>
+      <div className="actions"><button onClick={()=>{setPlaying(false);setTour(0)}}>Guided walkthrough</button><button className="primary" onClick={startDemo}>Run 120 s</button><span role="status">{pending ? 'Solving' : playing ? 'Playing' : 'Paused'} · {time} s</span></div>
     </header>
+    {tour!==null && <section className="field-tour" aria-label="Guided walkthrough">
+      <div><span className="workbench-kicker">Step {tour+1} of 3</span><h2>{tourSteps[tour].title}</h2><p>{tourSteps[tour].text}</p></div>
+      <div className="actions"><button className="primary" disabled={!ready} onClick={advanceTour}>{tourSteps[tour].action}</button><button onClick={()=>setTour(null)}>Exit tutorial</button></div>
+    </section>}
     <div className="field-bench">
       <details className="panel controls" open={controlsOpen} onToggle={event=>setControlsOpen(event.currentTarget.open)}>
         <summary>Scenario controls</summary>
@@ -139,6 +160,7 @@ export function FieldWorkbench({compact=false}:{compact?:boolean}) {
             }}/>
           </label>)}
           <button onClick={()=>apply(presets.Baseline)}>Reset parameters</button>
+          <div className="placement-presets"><span>Place sensor S1</span><button onClick={()=>move(0,wall)}>Cabin wall</button><button disabled={!ready || !result?.recommendation} onClick={()=>{if(result?.recommendation)move(0,result.recommendation)}}>Near crew</button></div>
           <details className="field-positions"><summary>Sensor coordinates</summary>
             {positions.map((position,index)=><fieldset key={index}>
               <legend>Sensor {index+1}</legend>
@@ -163,7 +185,7 @@ export function FieldWorkbench({compact=false}:{compact?:boolean}) {
           <button onClick={()=>setPositions(positions.length===1?[positions[0],{x:22,y:9}]:[positions[0]])}>{positions.length===1?'Add S2':'Remove S2'}</button>
         </div>
         <p className="simulation-caption">{pending ? 'Updating the model for the selected inputs.' : caption}</p>
-        <p className="field-schematic-note">Schematic, not to scale · Drag a sensor or use its coordinate controls.</p>
+        <p className="field-schematic-note">AI-assisted schematic · Not to scale. Drag a sensor or use its placement controls.</p>
       </section>
       <section className="panel field-telemetry" aria-label="Live telemetry">
         <div className="panel-title">Telemetry</div>
@@ -180,7 +202,12 @@ export function FieldWorkbench({compact=false}:{compact?:boolean}) {
         </div>
       </section>
     </div>
-    <div className="actions">
+    {ready && result && <section className="experiment-result" aria-label="Experiment result">
+      <div className="result-intro"><span className="workbench-kicker">Full-run result · {fieldDuration} s</span><h2>{crewCrossing<0 ? 'No local crossing in this run.' : wallTime!=null && wallTime<0 ? 'The wall sensor misses the local crossing.' : 'Placement changes when the signal arrives.'}</h2><p>Same model, different measurement locations. First crossing of the {format(demoThresholdPpm)} ppm experiment rule.</p></div>
+      <dl className="result-readings">{[{label:'Breathing zone',value:crewCrossing},{label:'Cabin wall',value:wallTime},{label:'Sensor S1',value:result.firstCrossing[cellIndex(positions[0])]}].map(item=><div key={item.label}><dt>{item.label}</dt><dd>{item.value==null || item.value<0 ? 'Not detected' : item.value+' s'}</dd></div>)}</dl>
+      <p className="result-boundary">Illustrative transport model, not a prediction of ISS conditions. NASA RR-1 supplies the starting concentration; it does not validate the spatial field. <a href="#/research">Check the sources →</a></p>
+    </section>}
+    <div className="actions export-actions">
       <button onClick={()=>void share()}>Copy scenario link</button><button disabled={!ready} onClick={exportCsv}>Export CSV</button><button disabled={!ready} onClick={exportPng}>Export cabin PNG</button>
       {status && <span role="status">{status}</span>}
     </div>
@@ -189,7 +216,7 @@ export function FieldWorkbench({compact=false}:{compact?:boolean}) {
       <p>{columns} × {rows} cells · 0.5 s solver step{ready && result ? ' · solved in '+result.milliseconds.toFixed(2)+' ms' : ''}.</p>
       <p>CO₂ is transported by modeled airflow and diffusion. A source adds CO₂ at the crew cell, and a sink removes CO₂ at the scrubber.</p>
       <p>The controls constrain inputs to the numerical test envelope. Flow and removal coefficients are illustrative. The {format(demoThresholdPpm)} ppm line is a demonstration trigger.</p>
-      <a href="#/research">Read equations, assumptions, and NASA references</a>
+      <a href="#/research">Review NASA sources</a>
     </details>
   </div>
 }
