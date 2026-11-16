@@ -33,7 +33,7 @@ export function ResearchPage() {
       <h3>Limitations</h3><ul>
         <li>No spatial airflow, CFD, geometry-resolved plume, breathing cycle, or suit/helmet atmosphere.</li>
         <li>No physiological, medical, or mission safety prediction. The demo rule is not an exposure limit.</li>
-        <li>Coefficients and volumes are illustrative, constant during a run, and not calibrated to RR-1.</li>
+        <li>Volumes and coefficients are illustrative and not calibrated to RR-1. Settings are constant between recorded interventions.</li>
         <li>Instantaneous ideal sensors with optional deterministic noise; no response lag, drift, or real instrument uncertainty.</li>
         <li>Two uniform volumes and a discrete location boundary; no intermediate concentrations or distance-dependent sensitivity.</li>
         <li>NASA reference conversion assumes constant 760 mmHg pressure. A reference crossing is not a compliance assessment.</li>
@@ -41,6 +41,13 @@ export function ResearchPage() {
         <li>Robustness covers only the displayed discrete grid and fixed removal, duration, initial conditions, and noise.</li>
         <li>TODO: obtain matched experimental data and mission-specific off-nominal requirements before broader claims.</li>
       </ul>
+    </section>
+    <section className="panel section"><h2>Live interventions and illustrative oxygen channel</h2>
+      <p>Mixing, removal and activity changes are applied after the recorded sample, without changing earlier points. Saved runs retain initial settings and a timestamped intervention plan for deterministic replay. The no-intervention comparison reruns the original settings for the same elapsed time; it is a model counterfactual, not measured treatment effectiveness.</p>
+      <div className="equation">dF/dt = (Ftarget − F)/120 − (22a)/(0.92 × 31 × 10⁴)</div>
+      <p>F is modeled cabin oxygen in percent; time is seconds. F starts at an assumed 20.9%. The chosen regulator response time is 120 s, the effective volume is 31 m³, and source activity a uses the existing illustrative CO₂ source. The 10⁴ factor converts ppm to percentage points. A constant-target interval uses the exact exponential solution. RQ = 0.92 is drawn from the assumptions in NASA’s CO₂ technical brief; NASA does not supply or validate this regulator equation.</p>
+      <p>This independent educational O₂ channel is not a complete gas/pressure balance and does not alter the CO₂ equations. Changing O₂ does not remove CO₂. The 18–23% target range is a software exploration range, not an operating recommendation. No SpO₂, tissue oxygenation, breathing-rate prediction, organ injury or recovery score is calculated. The body’s amber cue represents a local air-reference crossing only.</p>
+      <a href="https://www.nasa.gov/ochmo-tb-004-carbon-dioxide-2/" target="_blank" rel="noreferrer">NASA CO₂ brief · respiratory quotient background</a>
     </section>
     <section className="panel section"><div className="section-title"><h2>Evidence library</h2><input aria-label="Search NASA evidence" placeholder="Search NASA evidence" value={query} onChange={e=>setQuery(e.target.value)}/></div>
       {matches.length ? matches.map(s=><article className="source" key={s.id}><span className="micro">{s.section}</span><h3>{s.title}</h3><p>{s.detail}</p><a href={s.url} target="_blank" rel="noreferrer">Open NASA source <ExternalLink size={14}/></a></article>) : <p>No evidence matches this search.</p>}

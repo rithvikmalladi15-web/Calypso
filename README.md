@@ -67,7 +67,7 @@ The reduced-ventilation 300-second model cabin range is approximately **367.5–
 ## Limitations
 
 - Two perfectly mixed volumes; no spatial airflow, CFD, anatomy, suit atmosphere or breathing-cycle dynamics.
-- Illustrative constant coefficients, pressure and volumes; no parameter uncertainty estimates.
+- Illustrative coefficients and fixed pressure/volumes; settings are constant between timed interventions; no parameter uncertainty estimates.
 - Ideal sensor response with optional deterministic noise; no drift, lag or installation constraints.
 - First crossings use recorded sample times. Raw time-above-reference uses interpolation; it is distinct from the NASA averaged criterion.
 - The sweep covers only its displayed finite grid and fixed conditions.
@@ -101,7 +101,7 @@ React 19, TypeScript, Vite, Zustand, Recharts, Three.js, Papa Parse, Web Workers
 
 ## Tests
 
-Verified **2026-11-15: 44 tests passed across 11 files; production build passed**. Checks cover exchange-only conservation, source/removal mass balance, positivity, analytic steady state and convergence, zero-source behavior, the exact 36-second regression, averaging windows, sweep outcomes, saved references, CSV parsing, workbench controls and mocked Roger safeguards and Gemini-to-Mistral failover. Historical spatial-engine tests remain for unused legacy code; the active simulator is the two-volume engine.
+Verified **2026-11-15: 48 tests passed across 12 files; production build passed**. Checks cover exchange-only conservation, source/removal mass balance, positivity, analytic steady state and convergence, zero-source behavior, the exact 36-second regression, averaging windows, sweep outcomes, saved references, CSV parsing, workbench controls and mocked Roger safeguards and Gemini-to-Mistral failover. Historical spatial-engine tests remain for unused legacy code; the active simulator is the two-volume engine.
 
 Chrome checks on the production build cover run/pause/reset, tutorial Escape, mocked Roger replies, the masked exercise, local sensor placement, save/load, worker sweep and CSV download, NASA threshold selection and one-hour run, RR-1 comparison, and routes at desktop, 390 px and 360 px widths. No console errors or horizontal page overflow were observed in those checks. These checks do not establish scientific validation or guarantee behavior in every browser. Live provider output and distributed rate limiting were not verified.
 
@@ -125,3 +125,14 @@ Design, code, documentation and testing were developed with AI assistance. The v
 Simulation and Sensor Lab offer a rotatable, zoomable conceptual cabin and crew figure. Crew Health provides a selectable 3D body illustration. Drag or pinch on touchscreens, use the view buttons, or focus the canvas and use left/right arrows, +/−, and Home. Blue sensor markers can be selected; Sensor Lab provides Cabin/Breathing zone placement presets. Body-system buttons remain keyboard accessible.
 
 The same two-volume equations, zone boundary, run clock and masked exercise drive the 3D cabin. No spatial airflow or physiological simulation was added. The body is a simplified research illustration, not anatomical validation. The optional 2D views remain available, with automatic fallback when WebGL is unsupported or its context is lost. 3D resources load separately and render only on interaction or model updates; there is no automatic spin. Both scenes and exported PNGs carry “Made by AI” labels. Three.js is free/open-source; no paid assets or rendering service is used.
+
+
+## Paired cabin and crew workspace
+
+The cabin figure and body model sit side by side on desktop and stack on phones. Both follow the same recorded sample, including when inspecting history. The body displays air-exposure context: local CO₂, modeled cabin O₂ and raw time above the selected CO₂ plot reference. Amber lungs indicate an air-reference crossing, not injury or a predicted health outcome.
+
+Life support can increase mixing/removal, change activity to rest/exercise, or change an illustrative O₂ regulator target. Actions take effect after the current sample and preserve earlier data. **Advance 60 s** continues the current trajectory; **Run 300 s** and **Reset** start a fresh run using current settings. A no-intervention comparison reruns the original settings at the same elapsed time. Saved JSON reports retain the initial settings and complete timestamped intervention plan; Replay reproduces that plan rather than applying the final settings to the entire past.
+
+The independent O₂ channel starts at 20.9% and follows `dF/dt = (Ftarget − F)/120 − 22a/(0.92 × 31 × 10⁴)`, with F in percent and time in seconds. It uses the exact exponential solution per interval. Initial concentration, 120-second regulator response, effective 31 m³ volume and the 18–23% UI exploration range are assumptions, not recommended operating conditions. RQ 0.92 is an assumption discussed in the [NASA CO₂ brief](https://www.nasa.gov/ochmo-tb-004-carbon-dioxide-2/); NASA does not validate this equation. O₂ support and CO₂ removal are distinct functions described in the [NASA ECLSS overview](https://www.nasa.gov/reference/environmental-control-and-life-support-systems-eclss/).
+
+This add-on is not a complete gas/pressure balance, a physiological model or a treatment simulator. More modeled O₂ does not remove CO₂ or prove recovery. No blood saturation, tissue damage or medical oxygen dosing is calculated. Tests verify prospective changes, preserved histories, exact replay, independent oxygen behavior, and reset/boundary handling. The original 36-second CO₂ demo remains unchanged.

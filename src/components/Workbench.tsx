@@ -1,3 +1,5 @@
+import { LifeSupportControls } from './LifeSupportControls'
+import { defaultSupport, supportTimeline, timeAboveReference } from '../simulation/lifeSupport'
 import { CrewHealthPanel } from './CrewHealthPanel'
 import { thresholds } from '../simulation/thresholds'
 import { Robustness } from './Robustness'
@@ -27,6 +29,8 @@ export function Workbench({lab = false}: {lab?: boolean}) {
   const solver = useScenarioSolver(s.settings)
   const [cursor, setCursor] = useState<number | null>(null)
   const latest = s.points[s.points.length-1] ?? initial
+  const plan=useMemo(()=>({initialSettings:s.initialSettings,initialSupport:s.initialSupport,interventions:s.interventions,support:s.support}),[s.initialSettings,s.initialSupport,s.interventions,s.support])
+  const oxygenPoints=useMemo(()=>supportTimeline(s.points,plan),[s.points,plan])
   const point = s.points[Math.min(cursor ?? s.points.length - 1, s.points.length - 1)] ?? initial
   useEffect(() => { if (s.running || s.points.length === 1) setCursor(null) }, [s.running,s.points.length])
   const [heat, setHeat] = useState(true)
@@ -60,7 +64,7 @@ export function Workbench({lab = false}: {lab?: boolean}) {
       if (!location.hash.startsWith('#/simulation?')) return
       const settings = readScenario(location.hash)
       if (settings) {
-        set({settings,scenario:'Custom',points:[initial],running:false})
+        set({settings,initialSettings:settings,initialSupport:defaultSupport,support:defaultSupport,interventions:[],scenario:'Custom',points:[initial],running:false})
         setStatus('Shared scenario loaded.')
       } else setStatus('This scenario link contains missing or out-of-range settings.')
     }
@@ -85,8 +89,8 @@ export function Workbench({lab = false}: {lab?: boolean}) {
     catch { setStatus('Copy the scenario URL from the field below.') }
   }
   function exportCsv() {
-    const rows = s.points.map(sample=>hidden ? [sample.t,sample.cabin] : [sample.t,sample.cabin,sample.local])
-    const headings = hidden ? 'elapsed_s,cabin_co2_ppm' : 'elapsed_s,cabin_co2_ppm,breathing_zone_co2_ppm'
+    const rows = s.points.map((sample,index)=>hidden ? [sample.t,sample.cabin] : [sample.t,sample.cabin,sample.local,oxygenPoints[index]?.oxygen,oxygenPoints[index]?.oxygenTarget])
+    const headings = hidden ? 'elapsed_s,cabin_co2_ppm' : 'elapsed_s,cabin_co2_ppm,breathing_zone_co2_ppm,illustrative_cabin_o2_percent,o2_target_percent'
     download(new Blob([[headings,...rows.map(row=>row.join(','))].join('\n')],{type:'text/csv'}),'calypso-co2.csv')
   }
   async function exportPng(kind:'chart'|'cabin') {
@@ -135,25 +139,26 @@ export function Workbench({lab = false}: {lab?: boolean}) {
       setStatus('Choose a value within the shown range.')
       return
     }
-    set(state=>({scenario:'Custom',settings:{...state.settings,[key]:value},points:[initial],running:false}))
+    set(state=>({scenario:'Custom',settings:{...state.settings,[key]:value},initialSettings:{...state.settings,[key]:value},initialSupport:state.support,interventions:[],points:[initial],running:false}))
   }
   function save() {
     try {
-      useExperiments.getState().save(snapshot(s.scenario,s.settings,s.sensors,s.points,s.noise,s.thresholdId))
+      useExperiments.getState().save(snapshot(s.scenario,s.settings,s.sensors,s.points,s.noise,s.thresholdId,plan))
       setStatus('Experiment saved locally.')
     } catch { setStatus('Experiment storage is unavailable or full.') }
   }
   return <>
-    <div className="page-heading workstation-heading"><div><h1 id="simulation-heading" tabIndex={-1}>{lab ? 'Sensor Lab' : 'Cabin Simulation'}</h1><p>{lab ? 'Move virtual sensors and investigate missed local CO₂ excursions.' : 'Run a scenario, compare cabin and breathing-zone CO₂, then test your sensor layout.'}</p></div>
-      <div className="actions">{!lab && <button onClick={()=>crew.current?.scrollIntoView({behavior:"instant",block:"start"})}>Crew Health</button>}<a className="button" href="#co2-timeline" onClick={event=>{event.preventDefault();chart.current?.scrollIntoView({behavior:'instant',block:'start'})}}>View graphs</a><button onClick={save} disabled={hidden} title={hidden ? "Reveal the modeled zone before saving the full run" : undefined}><ArrowDownToLine size={16}/> Save experiment</button></div>
+    <div className="page-heading workstation-heading"><div><h1 id="simulation-heading" tabIndex={-1}>{lab ? 'Sensor Lab' : 'Cabin Simulation'}</h1><p>{lab ? 'Move virtual sensors and investigate missed local CO₂ excursions.' : 'Run the cabin and crew workspace. Apply life-support changes, inspect the response, and replay your decisions.'}</p></div>
+      <div className="actions">{!lab && <button onClick={()=>crew.current?.scrollIntoView({behavior:"instant",block:"start"})}>Crew &amp; life support</button>}<a className="button" href="#co2-timeline" onClick={event=>{event.preventDefault();chart.current?.scrollIntoView({behavior:'instant',block:'start'})}}>View graphs</a><button onClick={save} disabled={hidden} title={hidden ? "Reveal the modeled zone before saving the full run" : undefined}><ArrowDownToLine size={16}/> Save experiment</button></div>
     </div>
     {status && <p role="status" className="notice">{status}</p>}
-    <div className="bench">
+    <div className={lab?"bench":"bench mission-bench"}>
       <details className="panel controls" open={controlsOpen} onToggle={event=>setControlsOpen(event.currentTarget.open)}>
         <summary>Experiment controls</summary>
 
         <div className="panel-pad">
           <label className="field">Scenario<select value={s.scenario in presets ? s.scenario : 'Custom'} onChange={e=>{const preset=e.target.value;if(preset==='Custom')editCustom();else s.select(preset as keyof typeof presets)}}>{Object.keys(presets).map(name=><option key={name}>{name}</option>)}<option value="Custom">{s.scenario in presets || s.scenario==='Custom' ? 'Custom' : s.scenario}</option></select></label>
+          {!!s.interventions.length&&<p className="micro">{s.interventions.length} timed changes applied to this scenario.</p>}
           {!(s.scenario in presets) && <div className="custom-settings">
             <p>Custom starts with the current settings. Changing a value pauses the run and resets its clock. Select Run 300 s to test your settings.</p>
             <button type="button" onClick={editCustom}>Edit custom settings</button>
@@ -161,7 +166,7 @@ export function Workbench({lab = false}: {lab?: boolean}) {
           <label className="field">Threshold reference<select value={s.thresholdId} onChange={e=>set({thresholdId:e.target.value as keyof typeof thresholds})}>{Object.entries(thresholds).map(([id,item])=><option key={id} value={id}>{item.label}</option>)}</select></label>
           <p title={rule.description}>{rule.description} {rule.source && <a href={rule.source} target="_blank" rel="noreferrer" title={rule.description}>NASA source ↗</a>}</p>
           {rule.windowSeconds>0 && <p>{eligible?'Full averaging window available.':'Insufficient duration: 3,600 s required for a full one-hour average.'} The raw chart reference is approximately {Math.round(threshold).toLocaleString()} ppm at assumed sea-level pressure. TODO: verify mission-specific off-nominal limits before adding them.</p>}
-          <div className="subheading">MODEL PARAMETERS</div>
+          <div className="subheading">Current parameters</div><p className="micro">Editing these starts a fresh run. Use Life support to change conditions during the experiment.</p>
           <label className="range-label"><span>Ventilation <b>{fmt(s.settings.ventilation*100)}%</b></span><input ref={ventilationInput} title="Air mixing strength. Baseline: 65%." type="range" min="0" max="100" value={s.settings.ventilation*100} onChange={e=>settings('ventilation',+e.target.value/100)}/></label>
           <label className="range-label"><span>CO₂ removal <b>{fmt(s.settings.scrubber*100)}%</b></span><input title="Cabin CO₂ removal strength. Baseline: 65%." type="range" min="0" max="100" value={s.settings.scrubber*100} onChange={e=>settings('scrubber',+e.target.value/100)}/></label>
           <label className="range-label"><span>Relative activity <b>{s.settings.activity.toFixed(1)}×</b></span><input title="CO₂ production relative to resting activity. Baseline: 1×." type="range" min="0" max="3" step=".1" value={s.settings.activity} onChange={e=>settings('activity',+e.target.value)}/></label>
@@ -181,9 +186,9 @@ export function Workbench({lab = false}: {lab?: boolean}) {
           <button disabled={solver.pending || s.running || latest.t>=3600} onClick={s.tick}>Step 1 s</button>
           <select aria-label="Playback speed" value={s.speed} onChange={event=>set({speed:Number(event.target.value)})}>{[.5,1,2,4].map(speed=><option key={speed} value={speed}>{speed}×</option>)}</select>
           <button disabled={solver.pending} onClick={()=>{
-            set({running:false})
+            s.reset()
             solver.solve(points=>{setCursor(null);set({points,running:false})})
-          }}>{solver.pending ? 'Solving…' : 'Run 300 s'}</button>{rule.windowSeconds>0 && <button disabled={solver.pending} onClick={()=>{set({running:false});solver.solve(points=>set({points,running:false}),3600)}}>Run 3,600 s</button>}<span className="mono end" title="Elapsed model time">{String(Math.floor(latest.t/60)).padStart(2,'0')}:{String(latest.t%60).padStart(2,'0')}</span></div>
+          }}>{solver.pending ? 'Solving…' : 'Run 300 s'}</button>{rule.windowSeconds>0 && <button disabled={solver.pending} onClick={()=>{s.reset();solver.solve(points=>set({points,running:false}),3600)}}>Run 3,600 s</button>}<span className="mono end" title="Elapsed model time">{String(Math.floor(latest.t/60)).padStart(2,'0')}:{String(latest.t%60).padStart(2,'0')}</span></div>
         <div className="instrument-reading" aria-describedby="instrument-description"><span>{instrument==='cabin' ? 'Cabin sensor' : 'Modeled breathing zone'}</span><strong>{fmt(instrument==='cabin' ? reading(point,cabinSensor,s.noise) : point.local)} <small>ppm</small></strong>{!masked && <span>Local − cabin · {fmt(point.local-point.cabin)} ppm</span>}</div>
         <p id="instrument-description" className="instrument-description">{hidden ? "Reveal the modeled zone after running the exercise." : masked ? "Sampling mixed cabin air" : "The dashed outline marks the modeled breathing zone."}</p>
         <dl className="instrument-strip">
@@ -192,6 +197,11 @@ export function Workbench({lab = false}: {lab?: boolean}) {
           <div><dt>Sample time</dt><dd>{point.t} s</dd></div>
         </dl>
         <div className="detection-readout" role="status">{!eligible ? 'Awaiting 1 h of samples' : metrics.alert != null ? `Detected at ${metrics.alert} s` : `Not detected in ${latest.t} s`}<small>Current sensor layout · {rule.windowSeconds ? "one-hour average reference" : "demo rule"}</small></div>
+        <section ref={crew} id="crew-health-context" className={lab?"paired-models lab-model":"paired-models"} aria-label="Cabin and crew workspace">
+          <div className="cabin-companion"><header className="model-heading"><h2>Cabin environment</h2><p>Two modeled air volumes · current sample {point.t} s</p></header>        <CabinView noise={s.noise} point={point} sensors={s.sensors} airflow={false} heat={heat} coverage={coverage} hidden={masked} playing={s.running} ventilation={s.settings.ventilation} onMove={lab && !hidden ? move : undefined}/></div>
+          {!lab&&<section className="crew-companion" aria-label="Crew health in this simulation"><CrewHealthPanel compact point={point} oxygen={oxygenPoints.find(sample=>sample.t===point.t)?.oxygen} exposureSeconds={timeAboveReference(s.points.filter(sample=>sample.t<=point.t),threshold)} masked={hidden}/></section>}
+        </section>
+        {!lab&&<LifeSupportControls busy={solver.pending} inspecting={cursor!==null}/>}
     <section ref={chart} id="co2-timeline" className="panel timeline">
       <div className="panel-title"><Activity size={16}/> CO₂ timeline <span className="micro end">MODEL OUTPUT · PPM</span></div>
       <div className="panel-pad">
@@ -205,6 +215,7 @@ export function Workbench({lab = false}: {lab?: boolean}) {
           <div>Breathing zone <b>{fmt(point.local)} ppm</b>{delta(point.local,reference.local)} vs baseline</div>
           <div>Local minus cabin <b>{fmt(point.local-point.cabin)} ppm</b>{delta(point.local-point.cabin,reference.local-reference.cabin)} vs baseline</div>
         </div>}
+        {!!s.interventions.length&&<p className="intervention-markers">Interventions: {s.interventions.map((event,index)=><span key={index}>{event.t} s · {event.label}</span>)}</p>}
         <div className="timeline-inspect">
           <label className="field">Inspect sample · {point.t} s<input type="range" min={0} max={s.points.length-1} disabled={s.running || s.points.length<2} value={point.t} onChange={event=>setCursor(Number(event.target.value))}/></label>
           {cursor !== null && <button onClick={()=>setCursor(null)}>Return to latest</button>}
@@ -214,7 +225,7 @@ export function Workbench({lab = false}: {lab?: boolean}) {
         <span className="sr-only" role="status">{!s.running && !hidden ? `Paused at ${point.t} seconds. Local CO₂ ${fmt(point.local)} ppm.` : ''}</span>
       </div>
     </section>
-        <CabinView noise={s.noise} point={point} sensors={s.sensors} airflow={false} heat={heat} coverage={coverage} hidden={masked} playing={s.running} ventilation={s.settings.ventilation} onMove={lab && !hidden ? move : undefined}/>
+
         {solver.pending && <div className="solve-placeholder" role="status">Computing the run…</div>}
 
         <p className="schematic-disclosure">Conceptual schematic, not a spatial simulation.</p>
@@ -244,7 +255,6 @@ export function Workbench({lab = false}: {lab?: boolean}) {
         </div>
       </details>
     </div>
-    {!lab && <section ref={crew} id="crew-health-context" className="panel section crew-integrated" aria-label="Crew health in this simulation"><CrewHealthPanel/></section>}
     <Robustness/>
     <MeasurementCatalog points={s.points} sensors={s.sensors} noise={s.noise} masked={hidden} threshold={threshold}/>
     <details className="panel section">

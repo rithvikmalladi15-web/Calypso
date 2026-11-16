@@ -33,3 +33,7 @@ The optional NASA cabin reference uses 3 mmHg averaged over one hour, converted 
 Robustness uses the demo rule, a 6 × 6 ventilation/activity grid, 65% removal, zero noise, 650 ppm initial concentrations and 300 seconds. CSV exports include every grid setting and distinct no-crossing and never-detected outcomes. This is a deterministic sensitivity analysis, not flight validation.
 
 Unused legacy spatial-engine code is not connected to the active Simulation route. Both Simulation and Sensor Lab use the two-volume engine described above.
+
+## Prospective interventions and oxygen context
+
+See the README paired-workspace section and in-app Research & Methods for the independent illustrative O₂ regulator equation and assumptions. CO₂ settings can now change after a recorded sample; saved intervention plans reproduce the same trajectory. O₂ controls do not change the CO₂ balance or predict physiological outcomes.

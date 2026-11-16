@@ -1,3 +1,4 @@
+import { supportTimeline } from '../simulation/lifeSupport'
 import { thresholds } from '../simulation/thresholds'
 import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { useSim } from '../stores/simulationStore'
@@ -21,7 +22,8 @@ export function RogerAvatar({busy=false}:{busy?:boolean}) {
 }
 export function runSnapshot():RunContext {
   const s=useSim.getState(), point=s.points[s.points.length-1], rule=thresholds[s.thresholdId], metrics=detect(s.points,s.sensors,s.noise,rule.ppm,rule.windowSeconds)
-  return {scenario:s.scenario,elapsedSeconds:point.t,cabinPpm:Math.round(point.cabin),ventilationPercent:s.settings.ventilation*100,removalPercent:s.settings.scrubber*100,activity:s.settings.activity,thresholdPpm:rule.ppm,averagingSeconds:rule.windowSeconds,masked:s.masked,
+  const oxygen=supportTimeline(s.points,{initialSettings:s.initialSettings,initialSupport:s.initialSupport,interventions:s.interventions,support:s.support}).at(-1)!.oxygen
+  return {oxygenPercent:oxygen,oxygenTarget:s.support.oxygenTarget,interventionCount:s.interventions.length,scenario:s.scenario,elapsedSeconds:point.t,cabinPpm:Math.round(point.cabin),ventilationPercent:s.settings.ventilation*100,removalPercent:s.settings.scrubber*100,activity:s.settings.activity,thresholdPpm:rule.ppm,averagingSeconds:rule.windowSeconds,masked:s.masked,
     sensors:s.sensors.filter(sensor=>!s.masked||!isLocal(sensor)).map(sensor=>({id:sensor.id,location:isLocal(sensor)?'Breathing zone':'Cabin',ppm:Math.round(reading(point,sensor,s.noise))})),
     ...(!s.masked?{localPpm:Math.round(point.local),peakLocalPpm:Math.round(Math.max(...s.points.map(p=>p.local))),firstLocalCrossingSeconds:metrics.truth??null,firstSensorAlertSeconds:metrics.alert??null}:{})}
 }

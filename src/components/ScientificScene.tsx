@@ -7,7 +7,7 @@ import { download } from '../lib/chartDownloads'
 
 export type SceneProps = {
   kind:'cabin'|'body'; point?:Point; sensors?:Sensor[]; hidden?:boolean; heat?:boolean; noise?:number;
-  selectedSystem?:number; onSystem?:(index:number)=>void; onSensor?:(id:string)=>void; onUnavailable:()=>void;
+  environmentalExposure?:number; selectedSystem?:number; onSystem?:(index:number)=>void; onSensor?:(id:string)=>void; onUnavailable:()=>void;
 }
 const systemNames=['Brain & balance','Eyes','Lungs','Heart & circulation','Kidneys','Muscles','Bones']
 export const sensorPosition=(sensor:Pick<Sensor,'x'|'y'>)=>[(sensor.x-.5)*6,(.5-sensor.y)*3.525,.4] as const
@@ -127,7 +127,7 @@ export default function ScientificScene(props:SceneProps) {
         mat.opacity=latest.heat?Math.min(.28,.06+Math.max(0,(latest.point??initial).local-(latest.point??initial).cabin)/9000):.025
       }
       for(const {mesh,index} of organMeshes){
-        const mat=mesh.material as THREE.MeshStandardMaterial;mat.color.set(index===latest.selectedSystem?'#f0c46a':'#639bad');mat.emissive.set(index===latest.selectedSystem?'#332719':'#000000')
+        const mat=mesh.material as THREE.MeshStandardMaterial;const exposure=index===2&&(latest.environmentalExposure??0)>=1;mat.color.set(exposure?'#d4a44f':index===latest.selectedSystem?'#b7e2f1':'#639bad');mat.emissive.set(exposure?'#332719':'#000000')
       }
       const sensors=latest.sensors??[]
       for(const [id,mesh] of sensorMeshes)if(!sensors.some(sensor=>sensor.id===id)){
@@ -178,7 +178,7 @@ export default function ScientificScene(props:SceneProps) {
       renderer.dispose();renderer.forceContextLoss();canvas.remove()
     }
   },[props.kind])
-  useEffect(()=>{actions.current?.update()},[props.point,props.sensors,props.hidden,props.heat,props.selectedSystem])
+  useEffect(()=>{actions.current?.update()},[props.point,props.sensors,props.hidden,props.heat,props.selectedSystem,props.environmentalExposure])
   return <div className="scientific-3d">
     <div ref={host} className="scene-canvas"/>
     <span className="ai-image-credit">Made by AI · Conceptual 3D illustration</span>

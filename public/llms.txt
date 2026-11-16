@@ -31,3 +31,5 @@ Crew Health is a NASA-linked body map integrated into Simulation; Crew Nutrition
 ## Model transparency
 
 The active model is a two-volume mass balance, not spatial airflow. A worker sweep covers 36 ventilation/activity settings under a fixed demo rule and exports its grid. NASA Data compares model cabin ranges with RR-1 context but does not calibrate or validate the model. An optional NASA reference requires a complete one-hour average and explicitly assumes 760 mmHg total pressure for conversion. Unverified mission limits are TODO. Roger is server-side, restricted by instructions to model/reference explanations, and marked AI-generated, may be inaccurate.
+
+Simulation now pairs the 3D cabin and body side by side, with a shared sample cursor and prospective life-support interventions. An independent illustrative cabin-O2 regulator channel is explicitly labeled unvalidated and is not blood oxygen. Body cues describe air exposure, not injury. Saved intervention histories support deterministic replay.
