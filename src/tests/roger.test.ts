@@ -16,7 +16,7 @@ it('rejects oversized questions and invalid numeric settings',()=>{
   expect(()=>parseInput({...input,context:{...input.context,ventilationPercent:101}})).toThrow()
 })
 it('uses server credentials, grounds the request and returns only registered source links',async()=>{
-  const upstream=vi.fn().mockResolvedValue(new Response(JSON.stringify({candidates:[{content:{parts:[{text:JSON.stringify({answer:'The wall sensor missed the local crossing.',sourceIds:['CO2','invented']})}]}}]})))
+  const upstream=vi.fn().mockResolvedValue(new Response(JSON.stringify({candidates:[{content:{parts:[{text:JSON.stringify({answer:'The wall sensor missed the local crossing.',sourceIds:['CO2','SUIT','WASH','invented']})}]}}]})))
   const response=await askGemini(parseInput(input),'server-test-key','gemini-3.1-flash-lite',upstream)
   expect(response.sources.map(s=>s.id)).toEqual(['CO2'])
   const options=upstream.mock.calls[0][1]

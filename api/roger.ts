@@ -4,6 +4,7 @@ const buckets=new Map<string,{count:number;until:number}>()
 let total={count:0,until:0}
 export default async function handler(req:IncomingMessage & {body?:unknown},res:ServerResponse) {
   res.setHeader('Cache-Control','no-store')
+  res.setHeader('X-Roger-Version','open-cabin-v1')
   const send=(code:number,value:unknown)=>{res.statusCode=code;res.setHeader('Content-Type','application/json');res.end(JSON.stringify(value))}
   if(req.method!=='POST'){res.setHeader('Allow','POST');return send(405,{error:'Use POST.'})}
   const origin=req.headers.origin
