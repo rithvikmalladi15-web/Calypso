@@ -285,3 +285,14 @@ main[data-page=sensor-lab] .workstation-heading{padding-bottom:16px;border-botto
   .overview-hero-actions>a{flex-basis:100%}
   main[data-page=simulation] .workstation-heading,main[data-page=sensor-lab] .workstation-heading{align-items:flex-start}
 }
+
+.workspace-status{display:flex;align-items:center;gap:12px;margin-left:auto}
+.workspace-clock{font:12px var(--mono);white-space:nowrap;color:var(--muted)}
+.model-status{white-space:nowrap;font-size:13px}
+.model-status::before{content:"";display:inline-block;width:7px;height:7px;border-radius:50%;background:#69c7af;margin-right:7px}
+.instrument-strip{display:flex;flex-wrap:wrap;gap:6px 20px;padding:8px 16px;margin:0;border-block:1px solid #344252;color:#d5e0eb;background:#141b25}
+.instrument-strip dt{font-size:11px;color:#b4bfcc}.instrument-strip dd{margin:0;font:13px var(--mono)}
+.simulation-caption{margin:0;padding:10px 14px;border-top:1px solid var(--line);background:var(--panel)}
+.timeline-inspect{display:flex;align-items:center;gap:12px}.timeline-inspect .field{flex:1}
+@media(max-width:1000px){.workspace-status{margin-left:0}}
+@media(max-width:600px){.model-status{display:none}.workspace-clock{font-size:11px}}

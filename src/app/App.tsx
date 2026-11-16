@@ -1,3 +1,4 @@
+import { WorkspaceClock } from '../components/WorkspaceClock'
 import { SimulationBoundary } from '../components/SimulationBoundary'
 import { WorkspaceSettings } from '../components/WorkspaceSettings'
 import { CabinDiagram } from '../components/CabinDiagram'
@@ -18,9 +19,9 @@ import { useData } from '../stores/dataStore'
 import { routeHref, useRoute, type Route } from './router'
 
 const navigation: {label: string; pages: Route[]}[] = [
-  {label:'Explore', pages:['Overview','Simulation','Sensor Lab']},
-  {label:'Evidence', pages:['NASA Data','Research']},
-  {label:'Saved work', pages:['Experiments','Reports']},
+  {label:'Workbench', pages:['Overview','Simulation','Sensor Lab']},
+  {label:'Data sources', pages:['NASA Data','Research']},
+  {label:'Analytics', pages:['Experiments','Reports']},
 ]
 
 function Overview() {
@@ -86,6 +87,7 @@ export function App() {
     <header className="topbar">
       <a href={routeHref('Overview')} className="brand" aria-label="Calypso overview"><span className="brand-icon"><Orbit size={21}/></span><span>CALYPSO</span></a>
       <span className="workspace-description">Spacecraft environmental research</span>
+      <div className="workspace-status"><span className="model-status">Model ready</span><WorkspaceClock/></div>
       <WorkspaceSettings/>
     </header>
     <div className="shell">

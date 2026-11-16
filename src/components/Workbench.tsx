@@ -13,7 +13,10 @@ const fmt = (n: number) => Math.round(n).toLocaleString()
 export function Workbench({lab = false}: {lab?: boolean}) {
   const s = useSim()
   const set = useSim.setState
-  const point = s.points[s.points.length-1] ?? initial
+  const [cursor, setCursor] = useState<number | null>(null)
+  const latest = s.points[s.points.length-1] ?? initial
+  const point = s.points[Math.min(cursor ?? s.points.length - 1, s.points.length - 1)] ?? initial
+  useEffect(() => { if (s.running || s.points.length === 1) setCursor(null) }, [s.running,s.points.length])
   const [air, setAir] = useState(true)
   const [heat, setHeat] = useState(true)
   const [coverage, setCoverage] = useState(lab)
@@ -39,8 +42,8 @@ export function Workbench({lab = false}: {lab?: boolean}) {
     window.addEventListener('hashchange',restoreScenario)
     return ()=>window.removeEventListener('hashchange',restoreScenario)
   },[lab,set])
-  const baseline = useMemo(()=>run(presets.Baseline,point.t),[point.t])
-  const reference = baseline[baseline.length - 1]
+  const baseline = useMemo(()=>run(presets.Baseline,latest.t),[latest.t])
+  const reference = baseline[point.t] ?? initial
   const chartData = useMemo(()=>compare && !hidden
     ? s.points.map((sample,index)=>({...sample,baselineLocal:baseline[index]?.local}))
     : s.points,[compare,hidden,s.points,baseline])
@@ -118,12 +121,17 @@ export function Workbench({lab = false}: {lab?: boolean}) {
         <div className="instrument-switch" role="group" aria-label="Viewport instrument"><button aria-pressed={instrument==='cabin'} onClick={()=>setInstrument('cabin')}>Cabin sensor</button><button disabled={hidden} aria-pressed={instrument==='local'} onClick={()=>setInstrument('local')}>Modeled breathing zone</button></div>
         <div className="instrument-reading" aria-describedby="instrument-description"><span>{instrument==='cabin' ? 'Cabin sensor' : 'Modeled breathing zone'}</span><strong>{fmt(instrument==='cabin' ? reading(point,cabinSensor,s.noise) : point.local)} <small>ppm</small></strong>{!masked && <span>Local − cabin · {fmt(point.local-point.cabin)} ppm</span>}</div>
         <p id="instrument-description" className="instrument-description">{hidden ? "Reveal the modeled zone after running the exercise." : masked ? "Sampling mixed cabin air" : "The dashed outline marks the modeled breathing zone."}</p>
+        <dl className="instrument-strip">
+          <div><dt>Cabin</dt><dd>{fmt(point.cabin)} ppm</dd></div>
+          {!masked && <><div><dt>Modeled local</dt><dd>{fmt(point.local)} ppm</dd></div><div><dt>Local difference</dt><dd>{fmt(point.local-point.cabin)} ppm</dd></div></>}
+          <div><dt>Sample time</dt><dd>{point.t} s</dd></div>
+        </dl>
         <CabinDiagram point={point} sensors={s.sensors} airflow={air} heat={heat} coverage={coverage} hidden={masked} playing={s.running} ventilation={s.settings.ventilation} onMove={lab ? move : undefined}/>
-        <div className="playbar"><button className="primary" disabled={point.t>=3600} onClick={()=>set({running:!s.running})}>{s.running ? <Pause size={15}/> : <Play size={15}/>} {s.running ? 'Pause' : 'Run simulation'}</button>
+        <div className="playbar"><button className="primary" disabled={!s.running && latest.t>=3600} onClick={()=>set({running:!s.running})}>{s.running ? <Pause size={15}/> : <Play size={15}/>} {s.running ? 'Pause' : 'Run simulation'}</button>
           <button aria-label="Reset simulation" title="Reset simulation" onClick={s.reset}><RotateCcw size={15}/></button>
-          <button disabled={s.running || point.t>=3600} onClick={s.tick}>Step 1 s</button>
+          <button disabled={s.running || latest.t>=3600} onClick={s.tick}>Step 1 s</button>
           <select aria-label="Playback speed" value={s.speed} onChange={event=>set({speed:Number(event.target.value)})}>{[.5,1,2,4].map(speed=><option key={speed} value={speed}>{speed}×</option>)}</select>
-          <button onClick={()=>set({points:run(s.settings),running:false})}>Run 300 s</button><span className="mono end" title="Elapsed model time">{String(Math.floor(point.t/60)).padStart(2,'0')}:{String(point.t%60).padStart(2,'0')}</span></div>
+          <button onClick={()=>set({points:run(s.settings),running:false})}>Run 300 s</button><span className="mono end" title="Elapsed model time">{String(Math.floor(latest.t/60)).padStart(2,'0')}:{String(latest.t%60).padStart(2,'0')}</span></div>
         <p className="simulation-caption">{hidden ? 'The cabin sensor is all you can see. Reveal the modeled breathing zone to compare.' : metrics.truth != null && metrics.alert == null ? 'The modeled breathing zone crossed the demo threshold. The current sensors have yet to alert.' : metrics.truth != null && metrics.alert != null ? `The modeled zone crossed at ${metrics.truth} s. A sensor first alerted at ${metrics.alert} s.` : 'The modeled breathing zone is below the demonstration threshold so far.'}</p>
       </section>
       <details className="panel readouts" open><summary>Telemetry</summary>
@@ -132,7 +140,7 @@ export function Workbench({lab = false}: {lab?: boolean}) {
           <div className="metric"><span>Cabin CO₂</span><strong>{fmt(point.cabin)} <small>ppm</small></strong></div>
           <div className="metric local"><span>Breathing-zone CO₂</span><strong>{hidden ? 'Masked' : <>{fmt(point.local)} <small>ppm</small></>}</strong></div>
           <div className="metric compact"><span>Local − cabin</span><strong>{hidden ? '—' : fmt(point.local-point.cabin)} <small>ppm</small></strong></div>
-          <div className="rail-chart"><TelemetryChart data={s.points} series={[{key:'cabin',label:'Cabin'},...(!hidden ? [{key:'local',label:'Breathing zone'}] : [])]} unit="ppm"/></div>
+          <div className="rail-chart"><TelemetryChart data={s.points} series={[{key:'cabin',label:'Cabin'},...(!hidden ? [{key:'local',label:'Breathing zone'}] : [])]} unit="ppm" cursor={point.t}/></div>
           <div className="divider"/>
           <div className="subheading">VIRTUAL SENSORS</div>
           {s.sensors.map(sensor=><div className="sensor-read" key={sensor.id}><span>{sensor.id} · {hidden ? 'Virtual' : zoneName(sensor)}</span><b>{fmt(reading(point,sensor,s.noise))} ppm</b></div>)}
@@ -153,7 +161,11 @@ export function Workbench({lab = false}: {lab?: boolean}) {
           <div>Breathing zone <b>{fmt(point.local)} ppm</b>{delta(point.local,reference.local)} vs baseline</div>
           <div>Local minus cabin <b>{fmt(point.local-point.cabin)} ppm</b>{delta(point.local-point.cabin,reference.local-reference.cabin)} vs baseline</div>
         </div>}
-        <TelemetryChart data={chartData} series={[{key:'cabin',label:'Cabin'},...(!hidden?[{key:'local',label:'Breathing zone'}]:[]),...(compare && !hidden ? [{key:'baselineLocal',label:'Baseline breathing zone'}] : [])]} unit="ppm"/>
+        <div className="timeline-inspect">
+          <label className="field">Inspect sample · {point.t} s<input type="range" min={0} max={s.points.length-1} disabled={s.running || s.points.length<2} value={point.t} onChange={event=>setCursor(Number(event.target.value))}/></label>
+          {cursor !== null && <button onClick={()=>setCursor(null)}>Return to latest</button>}
+        </div>
+        <TelemetryChart cursor={point.t} data={chartData} series={[{key:'cabin',label:'Cabin'},...(!hidden?[{key:'local',label:'Breathing zone'}]:[]),...(compare && !hidden ? [{key:'baselineLocal',label:'Baseline breathing zone'}] : [])]} unit="ppm"/>
         {!hidden && <p>At {point.t} s, local CO₂ is {fmt(Math.abs(point.local-point.cabin))} ppm {point.local>=point.cabin ? 'above or equal to' : 'below'} the cabin reading. Ventilation mixes the two air volumes, while activity adds CO₂ near the astronaut.</p>}
         <span className="sr-only" role="status">{!s.running && !hidden ? `Paused at ${point.t} seconds. Local CO₂ ${fmt(point.local)} ppm.` : ''}</span>
       </div>
