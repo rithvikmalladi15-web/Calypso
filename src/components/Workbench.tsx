@@ -124,6 +124,7 @@ export function Workbench({lab = false}: {lab?: boolean}) {
           <button disabled={s.running || point.t>=3600} onClick={s.tick}>Step 1 s</button>
           <select aria-label="Playback speed" value={s.speed} onChange={event=>set({speed:Number(event.target.value)})}>{[.5,1,2,4].map(speed=><option key={speed} value={speed}>{speed}×</option>)}</select>
           <button onClick={()=>set({points:run(s.settings),running:false})}>Run 300 s</button><span className="mono end" title="Elapsed model time">{String(Math.floor(point.t/60)).padStart(2,'0')}:{String(point.t%60).padStart(2,'0')}</span></div>
+        <p className="simulation-caption">{hidden ? 'The cabin sensor is all you can see. Reveal the modeled breathing zone to compare.' : metrics.truth != null && metrics.alert == null ? 'The modeled breathing zone crossed the demo threshold. The current sensors have yet to alert.' : metrics.truth != null && metrics.alert != null ? `The modeled zone crossed at ${metrics.truth} s. A sensor first alerted at ${metrics.alert} s.` : 'The modeled breathing zone is below the demonstration threshold so far.'}</p>
       </section>
       <details className="panel readouts" open><summary>Telemetry</summary>
         <div className="panel-title"><AudioLines size={16}/> Live telemetry <span className={'end live '+(s.running ? 'active' : '')} aria-label={s.running ? 'Running' : 'Paused'}/></div>

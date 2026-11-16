@@ -37,7 +37,7 @@ function Overview() {
   return <>
     <section className="overview-hero" aria-labelledby="overview-title">
       <div className="overview-hero-copy">
-        <h1 id="overview-title">Can a cabin sensor miss a CO₂ buildup?</h1>
+        <h1 id="overview-title">A cabin sensor can miss CO₂ building up around an astronaut.</h1>
         <p>Run a short experiment to see how CO₂ can build up around an astronaut. Reveal the modeled breathing zone, then move the sensor and compare what it detects.</p>
         <div className="overview-hero-actions">
           <a className="button primary" href={routeHref('Simulation')}>Start the interactive tutorial</a>
