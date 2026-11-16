@@ -10,9 +10,9 @@ export function useAmbientAudio(options: AudioOptions, stress: number) {
   latest.current = options
   useEffect(() => {
     function unlock() {
-      if (engine.current || typeof AudioContext === 'undefined') return
+      if (typeof AudioContext === 'undefined') return
       try {
-        engine.current = createAmbientEngine()
+        engine.current ??= createAmbientEngine()
         void engine.current.resume().then(()=>setUnlocked(true)).catch(()=>{})
       } catch { /* Audio remains optional on unsupported devices. */ }
     }
@@ -29,7 +29,7 @@ export function useAmbientAudio(options: AudioOptions, stress: number) {
       if (document.hidden) void engine.current.suspend().catch(()=>{})
       else if (latest.current.music || latest.current.effects) void engine.current.resume().catch(()=>{})
     }
-    const events = ['pointerdown','keydown','click'] as const
+    const events = ['click'] as const
     events.forEach(name=>window.addEventListener(name,unlock,true))
     window.addEventListener('click',effect)
     window.addEventListener('change',effect)
