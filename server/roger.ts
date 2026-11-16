@@ -43,7 +43,7 @@ export async function askGemini(input:RogerInput,key:string,model='gemini-2.5-fl
     method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':key},signal:AbortSignal.timeout(25000),
     body:JSON.stringify({systemInstruction:{parts:[{text:instructions}]},contents:[{role:'user',parts:[{text:JSON.stringify(input)}]}],generationConfig:{temperature:.3,maxOutputTokens:800,responseMimeType:'application/json'}}),
   })
-  if(!response.ok)throw new Error(response.status===429?'RATE_LIMIT':'PROVIDER_UNAVAILABLE')
+  if(!response.ok)throw new Error(response.status===429?'RATE_LIMIT':'PROVIDER_'+response.status)
   const data=await response.json()
   const text=data.candidates?.[0]?.content?.parts?.filter((p:{thought?:boolean;text?:string})=>!p.thought).map((p:{text?:string})=>p.text??'').join('')
   const reply=JSON.parse(text??'{}')
