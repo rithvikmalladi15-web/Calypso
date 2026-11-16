@@ -1,3 +1,4 @@
+import { CrewHealthPanel } from './CrewHealthPanel'
 import { thresholds } from '../simulation/thresholds'
 import { Robustness } from './Robustness'
 import { MeasurementCatalog } from './MeasurementCatalog'
@@ -36,7 +37,15 @@ export function Workbench({lab = false}: {lab?: boolean}) {
   const [status, setStatus] = useState('')
   const [compare, setCompare] = useState(false)
   const [sharedLink, setSharedLink] = useState('')
+  const crew = useRef<HTMLElement>(null)
   const chart = useRef<HTMLElement>(null)
+  useEffect(()=>{
+    let frame=0
+    const showCrew=()=>{if(location.hash.startsWith("#/crew-health"))frame=requestAnimationFrame(()=>crew.current?.scrollIntoView({block:"start"}))}
+    showCrew()
+    window.addEventListener('hashchange',showCrew)
+    return ()=>{cancelAnimationFrame(frame);window.removeEventListener('hashchange',showCrew)}
+  },[])
   const viewport = useRef<HTMLElement>(null)
   const ventilationInput = useRef<HTMLInputElement>(null)
   function editCustom() {
@@ -134,7 +143,7 @@ export function Workbench({lab = false}: {lab?: boolean}) {
   }
   return <>
     <div className="page-heading workstation-heading"><div><h1 id="simulation-heading" tabIndex={-1}>{lab ? 'Sensor Lab' : 'Cabin Simulation'}</h1><p>{lab ? 'Move virtual sensors and investigate missed local CO₂ excursions.' : 'Run a scenario, compare cabin and breathing-zone CO₂, then test your sensor layout.'}</p></div>
-      <div className="actions"><a className="button" href="#co2-timeline" onClick={event=>{event.preventDefault();chart.current?.scrollIntoView({behavior:'instant',block:'start'})}}>View graphs</a><button onClick={save} disabled={hidden} title={hidden ? "Reveal the modeled zone before saving the full run" : undefined}><ArrowDownToLine size={16}/> Save experiment</button></div>
+      <div className="actions">{!lab && <button onClick={()=>crew.current?.scrollIntoView({behavior:"instant",block:"start"})}>Crew Health</button>}<a className="button" href="#co2-timeline" onClick={event=>{event.preventDefault();chart.current?.scrollIntoView({behavior:'instant',block:'start'})}}>View graphs</a><button onClick={save} disabled={hidden} title={hidden ? "Reveal the modeled zone before saving the full run" : undefined}><ArrowDownToLine size={16}/> Save experiment</button></div>
     </div>
     {status && <p role="status" className="notice">{status}</p>}
     <div className="bench">
@@ -234,11 +243,12 @@ export function Workbench({lab = false}: {lab?: boolean}) {
         </div>
       </details>
     </div>
+    {!lab && <section ref={crew} id="crew-health-context" className="panel section crew-integrated" aria-label="Crew health in this simulation"><CrewHealthPanel/></section>}
     <Robustness/>
     <MeasurementCatalog points={s.points} sensors={s.sensors} noise={s.noise} masked={hidden} threshold={threshold}/>
     <details className="panel section">
       <summary>Run measurements</summary>
-      <p><a href="#/crew-health">Explore how spaceflight affects the body ↗</a></p>
+      <p><a href="#/crew-health">Explore Crew Health within Simulation ↗</a></p>
       <p>Modeled results for the full recorded run. Means are weighted by elapsed time. Minimum and maximum use the recorded samples.</p>
       <h3>Run and settings</h3>
       <div className="stats">

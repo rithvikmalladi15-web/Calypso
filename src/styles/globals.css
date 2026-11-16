@@ -442,3 +442,5 @@ main>footer{padding-bottom:80px}
 .parameter-table table{width:100%;border-collapse:collapse;table-layout:fixed}.parameter-table th,.parameter-table td{text-align:left;vertical-align:top;padding:12px 8px;border-bottom:1px solid var(--line);overflow-wrap:anywhere}.parameter-table th{color:var(--muted)}@media(max-width:600px){.parameter-table th,.parameter-table td{padding:8px 3px;font-size:12px}.parameter-table th:last-child{width:34%}}
 
 .viewer .timeline .chart{margin-bottom:8px}.chart-events{margin:8px 0 16px}.viewer .playbar{border-bottom:1px solid var(--line)}@media(max-width:600px){.roger-launcher{width:56px;padding:0;justify-content:center}.roger-launcher>span,.roger-launcher>svg{display:none}.roger-launcher .roger-avatar{width:48px;height:48px}}
+
+.crew-integrated{scroll-margin-top:24px}.crew-integrated .crew-heading h2{font-size:24px}.crew-integrated .crew-workbench{grid-template-columns:minmax(260px,.8fr) minmax(0,1.2fr)}.crew-integrated .crew-view svg{max-height:420px}.crew-integrated .crew-details{display:grid;gap:12px}@media(max-width:760px){.crew-integrated .crew-workbench{grid-template-columns:1fr}}

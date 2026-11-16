@@ -13,7 +13,7 @@ In the reduced-ventilation **illustrative two-volume model**, the breathing zone
 3. Inspect the first local crossing at 36 s. Select **Cabin + breathing zone**: the large readout becomes **Detected at 36 s**.
 4. Save the experiment; reopen it using **Extras → Saved experiments**. Reports exports the settings, reference, samples and results as JSON or print/PDF.
 
-The primary navigation is Simulation, Sensor Lab, NASA Data, Research & Methods, and Reports. Crew Nutrition was removed, including its route, page, test and styles. Crew Health is an optional research explainer under Extras; it is not a physiology simulator. Saved experiments and About are also under Extras. The 100-item catalog contains derived statistics of ten signals, not 100 independently modeled variables.
+The primary navigation is Simulation, Sensor Lab, NASA Data, Research & Methods, and Reports. Crew Nutrition was removed, including its route, page, test and styles. Crew Health is integrated into Simulation with a shared live cabin snapshot; it is not a physiology simulator. Saved experiments and About are also under Extras. The 100-item catalog contains derived statistics of ten signals, not 100 independently modeled variables.
 
 ## Motivation
 
@@ -101,7 +101,7 @@ React 19, TypeScript, Vite, Zustand, Recharts, Papa Parse, Web Workers, Vitest, 
 
 ## Tests
 
-Verified **2026-11-15: 41 tests passed across 9 files; production build passed**. Checks cover exchange-only conservation, source/removal mass balance, positivity, analytic steady state and convergence, zero-source behavior, the exact 36-second regression, averaging windows, sweep outcomes, saved references, CSV parsing, workbench controls and mocked Roger safeguards and Gemini-to-Mistral failover. Historical spatial-engine tests remain for unused legacy code; the active simulator is the two-volume engine.
+Verified **2026-11-15: 43 tests passed across 10 files; production build passed**. Checks cover exchange-only conservation, source/removal mass balance, positivity, analytic steady state and convergence, zero-source behavior, the exact 36-second regression, averaging windows, sweep outcomes, saved references, CSV parsing, workbench controls and mocked Roger safeguards and Gemini-to-Mistral failover. Historical spatial-engine tests remain for unused legacy code; the active simulator is the two-volume engine.
 
 Chrome checks on the production build cover run/pause/reset, tutorial Escape, mocked Roger replies, the masked exercise, local sensor placement, save/load, worker sweep and CSV download, NASA threshold selection and one-hour run, RR-1 comparison, and routes at desktop, 390 px and 360 px widths. No console errors or horizontal page overflow were observed in those checks. These checks do not establish scientific validation or guarantee behavior in every browser. Live provider output and distributed rate limiting were not verified.
 

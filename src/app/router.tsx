@@ -7,5 +7,5 @@ function subscribe(callback: () => void) {
   return () => window.removeEventListener('hashchange',callback)
 }
 export function useRoute() {
-  return useSyncExternalStore(subscribe, () => routes.find(route=>routeHref(route)===location.hash.split("?")[0]) ?? 'Overview')
+  return useSyncExternalStore(subscribe, () => location.hash.split('?')[0]==='#/crew-health' ? 'Simulation' : routes.find(route=>routeHref(route)===location.hash.split("?")[0]) ?? 'Overview')
 }

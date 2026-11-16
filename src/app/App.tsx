@@ -1,5 +1,4 @@
 import { guidedCabinResult, guidedLocalResult, guidedPoints } from '../simulation/guidedScenario'
-import { CrewHealthPage } from '../pages/CrewHealthPage'
 import { Roger } from '../components/Roger'
 import { AboutPage } from '../pages/AboutPage'
 import { WorkspaceClock } from '../components/WorkspaceClock'
@@ -98,14 +97,13 @@ export function App() {
             {group.pages.map(page => <a key={page} href={routeHref(page)} aria-current={page === route ? 'page' : undefined}>{page==='Research'?'Research & Methods':page}</a>)}
           </div>)}
           <details className="nav-extras"><summary>Extras</summary>
-            <a href="#/crew-health">Crew Health</a><a href="#/experiments">Saved experiments</a><a href="#/about">About</a>
+            <a href="#/experiments">Saved experiments</a><a href="#/about">About</a>
           </details>
         </nav>
       </aside>
       <main id="main-content" data-page={routeHref(route).slice(2)} tabIndex={-1} key={route}>
         {route==='Overview' && <Overview/>}
         {(route==='Simulation'||route==='Sensor Lab') && <SimulationBoundary>{route==='Simulation' && <GuidedDemo/>}<Workbench lab={route==='Sensor Lab'}/></SimulationBoundary>}
-        {route==='Crew Health' && <CrewHealthPage/>}
         {route==='NASA Data' && <NASADataPage/>}
         {route==='Research' && <ResearchPage/>}
         {route==='About' && <AboutPage/>}

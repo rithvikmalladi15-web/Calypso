@@ -1,7 +1,6 @@
 import { useState } from 'react'
-import { routeHref } from '../app/router'
 import { useSim } from '../stores/simulationStore'
-import { threshold } from '../simulation/sensorModel'
+import { thresholds } from '../simulation/thresholds'
 
 const humanHealth = 'https://www.nasa.gov/reference/fundamentals-of-human-health/'
 const gravity = 'https://www.nasa.gov/hrp/hazard-gravity-fields/'
@@ -21,17 +20,19 @@ const phases = [
   ['After landing','The crew readapts to gravity. Researchers can monitor balance, strength and recovery over time.'],
 ]
 
-export function CrewHealthPage() {
+export function CrewHealthPanel() {
   const [selected,setSelected] = useState(2)
   const [phase,setPhase] = useState(0)
   const system = systems[selected]
   const sample = useSim(s=>s.points.at(-1))
   const masked = useSim(s=>s.masked)
+  const thresholdId = useSim(s=>s.thresholdId)
+  const rule = thresholds[thresholdId]
   const ppm = (value:number) => Math.round(value).toLocaleString()+' ppm'
   return <>
     <header className="page-heading crew-heading">
-      <h1>Crew Health</h1>
-      <p>Explore how the body adapts to spaceflight and see how cabin CO₂ fits into the picture.</p>
+      <h2>Crew Health</h2>
+      <p>Explore the body alongside your current cabin run. NASA research context is shown here; the model calculates air concentrations, not organ function or health outcomes.</p>
     </header>
     <div className="crew-workbench">
       <section className="crew-view" aria-label="Interactive crew anatomy">
@@ -76,7 +77,7 @@ export function CrewHealthPage() {
           <a href={system.url} target="_blank" rel="noreferrer">Read the NASA reference ↗</a>
         </section>
         <section className="panel section">
-          <h2>Mission timeline</h2>
+          <h3>Spaceflight research timeline</h3><p>These phases are background context, not predictions driven by the simulation clock.</p>
           <div className="crew-system-buttons" role="group" aria-label="Mission phase">
             {phases.map(([label],index)=><button key={label} aria-pressed={phase===index} onClick={()=>setPhase(index)}>{label}</button>)}
           </div>
@@ -84,15 +85,15 @@ export function CrewHealthPage() {
           <a href="https://www.nasa.gov/humans-in-space/the-human-body-in-space/" target="_blank" rel="noreferrer">Explore NASA’s human spaceflight research ↗</a>
         </section>
         <section className="panel section">
-          <h2>Cabin simulation snapshot</h2>
+          <h3>This simulation · current sample</h3>
           <p>The simulation calculates air concentrations. Organ readings and individual health outcomes require physiological data.</p>
           {sample && <div className="stats">
             <div>Elapsed model time <b>{sample.t} s</b></div>
             <div>Cabin CO₂ <b>{ppm(sample.cabin)}</b></div>
             <div>Breathing-zone CO₂ <b>{masked?'Masked':ppm(sample.local)}</b></div>
-            <div>CO₂ experiment rule <b>{ppm(threshold)}</b></div>
+            <div>Selected reference <b>{rule.label}</b></div>
           </div>}
-          <a className="button" href={routeHref('Simulation')}>Open Cabin Simulation</a>
+          <p>{rule.description}</p>
         </section>
       </div>
     </div>
