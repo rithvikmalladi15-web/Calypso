@@ -17,7 +17,7 @@ CALYPSO models two air volumes: mixed cabin air and the air near an astronaut’
 
 The model uses two effective volumes with an illustrative local CO₂ source, symmetric exchange, and cabin removal. The 1,250 ppm threshold is an experiment rule. NASA Data displays measured RR-1 CO₂, temperature, and relative humidity for ISS flight and ground control separately from model results.
 
-Crew Health provides a NASA-linked body map. Crew Nutrition totals user-entered nutrients by mission day. Roger is an optional Gemini-powered guide to the model and NASA reference directory.
+Crew Health provides a NASA-linked body map. Roger is an optional Gemini-powered guide to the model and NASA reference directory.
 
 ## Links
 

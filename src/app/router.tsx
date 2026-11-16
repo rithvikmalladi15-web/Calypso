@@ -1,5 +1,5 @@
 import { useSyncExternalStore } from 'react'
-export const routes = ['Overview','Simulation','Sensor Lab','Crew Health','Crew Nutrition','NASA Data','Experiments','Research','Reports','About'] as const
+export const routes = ['Overview','Simulation','Sensor Lab','Crew Health','NASA Data','Experiments','Research','Reports','About'] as const
 export type Route = typeof routes[number]
 export const routeHref = (route: Route) => '#/' + route.toLowerCase().replaceAll(' ','-')
 function subscribe(callback: () => void) {

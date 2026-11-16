@@ -419,14 +419,6 @@ main>footer{padding-bottom:80px}
 .crew-details .stats{margin-bottom:12px}
 @media(max-width:760px){.crew-workbench{grid-template-columns:1fr}.crew-view svg{max-height:465px}}
 
-.nutrition-group{margin-bottom:12px;border-top:1px solid var(--line)}
-.nutrition-group summary{cursor:pointer;padding:12px 0;font-weight:600}
-.nutrition-fields{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(140px,100%),1fr));gap:8px 12px}
-.nutrition-fields input{width:100%;min-width:0;box-sizing:border-box}
-.nutrition-totals{margin:0}
-.nutrition-totals>div{display:flex;justify-content:space-between;gap:12px;border-bottom:1px solid var(--line);padding:8px 0}
-.nutrition-totals dd{margin:0;text-align:right;font-family:var(--mono)}
-.nutrition-totals small{display:block;font-family:Barlow,system-ui,sans-serif;color:var(--muted)}
 .custom-settings{padding-bottom:10px}
 .custom-settings p{font-size:13px}
 .demo-guide{margin-top:16px;border-top:1px solid var(--line)}
@@ -440,3 +432,5 @@ main>footer{padding-bottom:80px}
 .submission-results dt{color:var(--muted)}
 .submission-results dd{margin:4px 0 0;font:600 clamp(18px,2vw,26px) var(--mono);color:var(--text)}
 @media(max-width:600px){.submission-results{grid-template-columns:1fr;gap:0}.submission-results>div{display:flex;justify-content:space-between;align-items:baseline;gap:12px}.submission-results dd{white-space:nowrap}}
+.nav-extras{padding:12px;color:var(--muted)}
+.nav-extras a{display:block;padding:10px}

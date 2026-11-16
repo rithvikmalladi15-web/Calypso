@@ -16,7 +16,7 @@
 - **Cabin Simulation and Sensor Lab** let you change ventilation, CO₂ removal, activity, and sensor position. The measurement catalog calculates ten statistics for each of ten model signals.
 - **NASA Data** charts measured CO₂, temperature, and relative humidity for RR-1 ISS and ground-control observations. [Dataset provenance and import notes](public/data/README.md)
 - **Research** gives the equations and the role of each source. The illustrative two-compartment model exchanges CO₂ between cabin air and the breathing zone and removes CO₂ from the cabin. The 1,250 ppm line is an experiment rule. The demo does not establish an astronaut safety limit or validate the model against ISS airflow measurements. [Model and equations](research/evidence.md)
-- **Crew Health and Crew Nutrition** add a NASA-sourced body map and a mission-day nutrition log with food-source notes. The log totals values entered by the user. Organ effects are explained through research.
+- **Crew Health** add a NASA-sourced body map. Organ effects are explained through research.
 - **Roger** is an optional Gemini-powered AI guide for the latest main-workbench run. The app identifies AI assistance, and Roger has no NASA affiliation. The core experiment and exports run independently of Gemini.
 
 ## Run and verify locally
@@ -28,7 +28,7 @@ npm install
 npm run dev
 ```
 
-Run `npm run test` for the regression suite and `npm run build` for the production build. CALYPSO uses React, TypeScript, Vite, and a deterministic simulation engine. Saved runs and nutrition entries are stored in the browser.
+Run `npm run test` for the regression suite and `npm run build` for the production build. CALYPSO uses React, TypeScript, Vite, and a deterministic simulation engine. Saved runs are stored in the browser.
 
 ## Hosting and credits
 

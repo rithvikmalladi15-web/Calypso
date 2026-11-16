@@ -33,7 +33,6 @@ export function CrewHealthPage() {
       <h1>Crew Health</h1>
       <p>Explore how the body adapts to spaceflight and see how cabin CO₂ fits into the picture.</p>
     </header>
-    <p><a href={routeHref('Crew Nutrition')}>Open the crew nutrition log →</a></p>
     <div className="crew-workbench">
       <section className="crew-view" aria-label="Interactive crew anatomy">
         <div className="crew-view-title">Crew anatomy <span>Illustrative body map</span></div>

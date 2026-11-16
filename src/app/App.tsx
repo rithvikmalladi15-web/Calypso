@@ -1,5 +1,4 @@
 import { guidedCabinResult, guidedLocalResult, guidedPoints } from '../simulation/guidedScenario'
-import { NutritionPage } from '../pages/NutritionPage'
 import { CrewHealthPage } from '../pages/CrewHealthPage'
 import { Roger } from '../components/Roger'
 import { AboutPage } from '../pages/AboutPage'
@@ -21,9 +20,7 @@ import { useSim } from '../stores/simulationStore'
 import { routeHref, useRoute, type Route } from './router'
 
 const navigation: {label: string; pages: Route[]}[] = [
-  {label:'Workbench', pages:['Overview','Simulation','Sensor Lab','Crew Health','Crew Nutrition']},
-  {label:'Data sources', pages:['NASA Data','Research','About']},
-  {label:'Analytics', pages:['Experiments','Reports']},
+  {label:'Workbench', pages:['Simulation','Sensor Lab','NASA Data','Research','Reports']},
 ]
 
 function Overview() {
@@ -72,10 +69,7 @@ function Overview() {
       <p>A cabin reading can hide a local change in air quality. We built CALYPSO so students and judges can investigate where a CO₂ sensor would detect that change and see the assumptions behind the result.</p>
       <ul><li>See why cabin and local CO₂ can differ.</li><li>Compare placement with the underlying run held fixed.</li><li>Use NASA RR-1 observations to inspect flight and ground measurements.</li></ul>
     </details>
-    <section className="overview-paths" aria-label="Crew research tools">
-      <article><h2>Crew Health</h2><p>Explore spaceflight research on the lungs, heart, eyes, bones, and other body systems.</p><a href={routeHref('Crew Health')}>Explore the body map →</a></article>
-      <article><h2>Crew Nutrition</h2><p>Track meals by mission day and document the sources behind your nutrient totals.</p><a href={routeHref('Crew Nutrition')}>Open the nutrition log →</a></article>
-    </section>
+
   </>
 }
 export function App() {
@@ -101,14 +95,16 @@ export function App() {
         <nav aria-label="Workspace">
           {navigation.map(group => <div className="nav-group" role="group" aria-label={group.label} key={group.label}>
             <span className="nav-group-label">{group.label}</span>
-            {group.pages.map(page => <a key={page} href={routeHref(page)} aria-current={page === route ? 'page' : undefined}>{page}</a>)}
+            {group.pages.map(page => <a key={page} href={routeHref(page)} aria-current={page === route ? 'page' : undefined}>{page==='Research'?'Research & Methods':page}</a>)}
           </div>)}
+          <details className="nav-extras"><summary>Extras</summary>
+            <a href="#/crew-health">Crew Health</a><a href="#/experiments">Saved experiments</a><a href="#/about">About</a>
+          </details>
         </nav>
       </aside>
       <main id="main-content" data-page={routeHref(route).slice(2)} tabIndex={-1} key={route}>
         {route==='Overview' && <Overview/>}
         {(route==='Simulation'||route==='Sensor Lab') && <SimulationBoundary>{route==='Simulation' && <GuidedDemo/>}<Workbench lab={route==='Sensor Lab'}/></SimulationBoundary>}
-        {route==='Crew Nutrition' && <NutritionPage/>}
         {route==='Crew Health' && <CrewHealthPage/>}
         {route==='NASA Data' && <NASADataPage/>}
         {route==='Research' && <ResearchPage/>}
