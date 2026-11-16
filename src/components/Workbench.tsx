@@ -134,7 +134,7 @@ export function Workbench({lab = false}: {lab?: boolean}) {
   }
   return <>
     <div className="page-heading workstation-heading"><div><h1 id="simulation-heading" tabIndex={-1}>{lab ? 'Sensor Lab' : 'Cabin Simulation'}</h1><p>{lab ? 'Move virtual sensors and investigate missed local CO₂ excursions.' : 'Run a scenario, compare cabin and breathing-zone CO₂, then test your sensor layout.'}</p></div>
-      <div className="actions"><a className="button" href="#co2-timeline" onClick={event=>{event.preventDefault();chart.current?.scrollIntoView({behavior:'instant',block:'start'})}}>View graphs</a><button onClick={save}><ArrowDownToLine size={16}/> Save experiment</button></div>
+      <div className="actions"><a className="button" href="#co2-timeline" onClick={event=>{event.preventDefault();chart.current?.scrollIntoView({behavior:'instant',block:'start'})}}>View graphs</a><button onClick={save} disabled={hidden} title={hidden ? "Reveal the modeled zone before saving the full run" : undefined}><ArrowDownToLine size={16}/> Save experiment</button></div>
     </div>
     {status && <p role="status" className="notice">{status}</p>}
     <div className="bench">
@@ -165,6 +165,14 @@ export function Workbench({lab = false}: {lab?: boolean}) {
       <section ref={viewport} className="panel viewer">
         <div className="panel-title"><Crosshair size={16}/> Cabin view <span className="viewport-state end"><i aria-hidden="true"/>{s.running ? "Running" : "Paused"}</span></div>
         <div className="instrument-switch" role="group" aria-label="Viewport instrument"><button aria-pressed={instrument==='cabin'} onClick={()=>setInstrument('cabin')}>Cabin sensor</button><button disabled={hidden} aria-pressed={instrument==='local'} onClick={()=>setInstrument('local')}>Modeled breathing zone</button></div>
+        <div className="playbar"><button className="primary" disabled={solver.pending || (!s.running && latest.t>=3600)} onClick={()=>set({running:!s.running})}>{s.running ? <Pause size={15}/> : <Play size={15}/>} {s.running ? 'Pause' : 'Run simulation'}</button>
+          <button aria-label="Reset simulation" title="Reset simulation" disabled={solver.pending} onClick={s.reset}><RotateCcw size={15}/></button>
+          <button disabled={solver.pending || s.running || latest.t>=3600} onClick={s.tick}>Step 1 s</button>
+          <select aria-label="Playback speed" value={s.speed} onChange={event=>set({speed:Number(event.target.value)})}>{[.5,1,2,4].map(speed=><option key={speed} value={speed}>{speed}×</option>)}</select>
+          <button disabled={solver.pending} onClick={()=>{
+            set({running:false})
+            solver.solve(points=>{setCursor(null);set({points,running:false})})
+          }}>{solver.pending ? 'Solving…' : 'Run 300 s'}</button>{rule.windowSeconds>0 && <button disabled={solver.pending} onClick={()=>{set({running:false});solver.solve(points=>set({points,running:false}),3600)}}>Run 3,600 s</button>}<span className="mono end" title="Elapsed model time">{String(Math.floor(latest.t/60)).padStart(2,'0')}:{String(latest.t%60).padStart(2,'0')}</span></div>
         <div className="instrument-reading" aria-describedby="instrument-description"><span>{instrument==='cabin' ? 'Cabin sensor' : 'Modeled breathing zone'}</span><strong>{fmt(instrument==='cabin' ? reading(point,cabinSensor,s.noise) : point.local)} <small>ppm</small></strong>{!masked && <span>Local − cabin · {fmt(point.local-point.cabin)} ppm</span>}</div>
         <p id="instrument-description" className="instrument-description">{hidden ? "Reveal the modeled zone after running the exercise." : masked ? "Sampling mixed cabin air" : "The dashed outline marks the modeled breathing zone."}</p>
         <dl className="instrument-strip">
@@ -196,15 +204,7 @@ export function Workbench({lab = false}: {lab?: boolean}) {
         <span className="sr-only" role="status">{!s.running && !hidden ? `Paused at ${point.t} seconds. Local CO₂ ${fmt(point.local)} ppm.` : ''}</span>
       </div>
     </section>
-        <CabinDiagram point={point} sensors={s.sensors} airflow={false} heat={heat} coverage={coverage} hidden={masked} playing={s.running} ventilation={s.settings.ventilation} onMove={lab ? move : undefined}/>
-        <div className="playbar"><button className="primary" disabled={solver.pending || (!s.running && latest.t>=3600)} onClick={()=>set({running:!s.running})}>{s.running ? <Pause size={15}/> : <Play size={15}/>} {s.running ? 'Pause' : 'Run simulation'}</button>
-          <button aria-label="Reset simulation" title="Reset simulation" disabled={solver.pending} onClick={s.reset}><RotateCcw size={15}/></button>
-          <button disabled={solver.pending || s.running || latest.t>=3600} onClick={s.tick}>Step 1 s</button>
-          <select aria-label="Playback speed" value={s.speed} onChange={event=>set({speed:Number(event.target.value)})}>{[.5,1,2,4].map(speed=><option key={speed} value={speed}>{speed}×</option>)}</select>
-          <button disabled={solver.pending} onClick={()=>{
-            set({running:false})
-            solver.solve(points=>{setCursor(null);set({points,running:false})})
-          }}>{solver.pending ? 'Solving…' : 'Run 300 s'}</button>{rule.windowSeconds>0 && <button disabled={solver.pending} onClick={()=>{set({running:false});solver.solve(points=>set({points,running:false}),3600)}}>Run 3,600 s</button>}<span className="mono end" title="Elapsed model time">{String(Math.floor(latest.t/60)).padStart(2,'0')}:{String(latest.t%60).padStart(2,'0')}</span></div>
+        <CabinDiagram point={point} sensors={s.sensors} airflow={false} heat={heat} coverage={coverage} hidden={masked} playing={s.running} ventilation={s.settings.ventilation} onMove={lab && !hidden ? move : undefined}/>
         {solver.pending && <div className="solve-placeholder" role="status">Computing the run…</div>}
 
         <p className="schematic-disclosure">Conceptual schematic, not a spatial simulation. AI-assisted cartoon illustration.</p>
@@ -273,9 +273,9 @@ export function Workbench({lab = false}: {lab?: boolean}) {
       <div className="stats"><div>First sensor alert <b>{metrics.alert != null ? metrics.alert+' s' : 'None'}</b></div>{!hidden && <><div>Peak local CO₂ <b>{fmt(peak)} ppm</b></div><div>Raw concentration time above reference <b>{timeAbove.toFixed(1)} s</b></div><div>First local crossing <b>{metrics.truth != null ? metrics.truth+' s' : 'None'}</b></div><div>Mean absolute error <b>{fmt(metrics.meanError)} ppm</b></div><div>Alert minus crossing <b>{metrics.delay != null ? metrics.delay+' s' : metrics.truth != null ? 'Missed' : 'No local crossing'}</b></div></>}</div>
       {!hidden && <p>Duration uses linear interpolation between samples. Mean absolute error compares the highest sensor reading at each sample with modeled breathing-zone CO₂.</p>}
       {lab && <>
-        <div className="actions"><button onClick={()=>set({sensors:[cabinSensor]})}>Cabin only</button><button onClick={()=>set({sensors:[cabinSensor,localSensor]})}>Cabin + breathing zone</button></div>
+        <div className="actions"><button onClick={()=>set({sensors:[cabinSensor]})}>Cabin only</button><button disabled={hidden} onClick={()=>set({sensors:[cabinSensor,localSensor]})}>Cabin + breathing zone</button></div>
         <p>Drag markers on the schematic or adjust positions below. The zone boundary assigns each reading. Marker halos indicate location only.</p>
-        {s.sensors.map(sensor=><div className="mapping" key={sensor.id}><b>{sensor.id}</b><label>Place sensor<select aria-label={sensor.id+' placement'} value={isLocal(sensor)?'local':'cabin'} onChange={e=>{const target=e.target.value==='local'?localSensor:cabinSensor;move(sensor.id,target.x,target.y)}}><option value="cabin">Cabin</option><option value="local">Breathing zone</option></select></label><label>X position <input type="range" min={8} max={92} value={sensor.x*100} onChange={e=>move(sensor.id,+e.target.value/100,sensor.y)}/></label><label>Y position <input type="range" min={12} max={88} value={sensor.y*100} onChange={e=>move(sensor.id,sensor.x,+e.target.value/100)}/></label></div>)}
+        {s.sensors.map(sensor=><div className="mapping" key={sensor.id}><b>{sensor.id}</b><label>Place sensor<select aria-label={sensor.id+' placement'} disabled={hidden} value={isLocal(sensor)?'local':'cabin'} onChange={e=>{const target=e.target.value==='local'?localSensor:cabinSensor;move(sensor.id,target.x,target.y)}}><option value="cabin">Cabin</option><option value="local">Breathing zone</option></select></label><label>X position <input disabled={hidden} type="range" min={8} max={92} value={sensor.x*100} onChange={e=>move(sensor.id,+e.target.value/100,sensor.y)}/></label><label>Y position <input disabled={hidden} type="range" min={12} max={88} value={sensor.y*100} onChange={e=>move(sensor.id,sensor.x,+e.target.value/100)}/></label></div>)}
         <label className="range-label">Deterministic noise amplitude · {s.noise} ppm<input type="range" min="0" max="500" step="10" value={s.noise} onChange={e=>set({noise:+e.target.value})}/></label>
         {candidates.length > 0 && <><h3>Candidate layouts ranked by mean error</h3><div className="stats">{candidates.map(layout=><div key={layout.name}>{layout.name}<b>{fmt(layout.error)} ppm mean error</b></div>)}</div></>}
       </>}

@@ -4,7 +4,7 @@ export const colors = ['#80B7E8', '#F0C46A', '#69C7AF', '#D697CE', '#E59A70']
 export function TelemetryChart({data, series, unit, time = false, threshold, thresholdLabel = "Experiment rule", reference, cursor, events = []}: {data: object[]; series: {key: string; label: string}[]; unit: string; time?: boolean; threshold?: number; thresholdLabel?:string; reference?: {value:number;label:string}; cursor?: number; events?: {time?: number; label: string}[]}) {
   const quality = usePreferences()?.preferences.quality ?? 'Medium'
   const format = (t: number) => time ? new Date(t).toISOString().slice(5,16).replace('T',' ') : String(t)
-  return <div className="chart" role="img" aria-label={series.map(s => s.label).join(', ') + ' in ' + unit}>
+  return <><div className="chart" role="img" aria-label={series.map(s => s.label).join(', ') + ' in ' + unit}>
     <ResponsiveContainer width="100%" height="100%" minWidth={0}>
       <LineChart data={data} margin={{top:10,right:16,bottom:12,left:4}}>
         <CartesianGrid stroke="#25394b" vertical={false} />
@@ -19,6 +19,7 @@ export function TelemetryChart({data, series, unit, time = false, threshold, thr
         {series.map((s,i) => <Line key={s.key} type="linear" dataKey={s.key} name={s.label} stroke={colors[i % colors.length]} dot={data.length === 1} strokeWidth={2} strokeDasharray={i % 2 ? "6 4" : undefined} connectNulls={false} isAnimationActive={false}/>)}
       </LineChart>
     </ResponsiveContainer>
+    </div>
     {events.some(event=>event.time != null) && <p className="chart-events">{events.filter(event=>event.time != null).map(event=>`${event.label}: ${event.time} s`).join(" · ")}</p>}
-  </div>
+  </>
 }

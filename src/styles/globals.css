@@ -440,3 +440,5 @@ main>footer{padding-bottom:80px}
 .sweep-grid{max-width:740px}.sweep-row{display:grid;grid-template-columns:repeat(7,minmax(0,1fr))}.sweep-row>span{padding:12px 4px;text-align:center;border:1px solid var(--line);font-variant-numeric:tabular-nums}.sweep-missed{background:repeating-linear-gradient(135deg,#453721,#453721 4px,#29251f 4px,#29251f 8px);color:#f0c46a}@media(max-width:430px){.sweep-row>span{font-size:11px;padding:12px 1px}}
 
 .parameter-table table{width:100%;border-collapse:collapse;table-layout:fixed}.parameter-table th,.parameter-table td{text-align:left;vertical-align:top;padding:12px 8px;border-bottom:1px solid var(--line);overflow-wrap:anywhere}.parameter-table th{color:var(--muted)}@media(max-width:600px){.parameter-table th,.parameter-table td{padding:8px 3px;font-size:12px}.parameter-table th:last-child{width:34%}}
+
+.viewer .timeline .chart{margin-bottom:8px}.chart-events{margin:8px 0 16px}.viewer .playbar{border-bottom:1px solid var(--line)}@media(max-width:600px){.roger-launcher{width:56px;padding:0;justify-content:center}.roger-launcher>span,.roger-launcher>svg{display:none}.roger-launcher .roger-avatar{width:48px;height:48px}}
