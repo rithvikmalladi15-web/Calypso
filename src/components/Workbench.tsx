@@ -98,14 +98,14 @@ export function Workbench({lab = false}: {lab?: boolean}) {
     } catch { setStatus('Experiment storage is unavailable or full.') }
   }
   return <>
-    <div className="page-heading workstation-heading"><div><h1 id="simulation-heading" tabIndex={-1}>{lab ? 'Sensor Lab' : 'Cabin Simulation'}</h1><p>{lab ? 'Move virtual sensors and investigate missed local CO₂ excursions.' : 'Investigate airflow, localized CO₂ accumulation, and virtual sensor coverage.'}</p></div>
-      <button onClick={save}><ArrowDownToLine size={16}/> Save experiment</button>
+    <div className="page-heading workstation-heading"><div><h1 id="simulation-heading" tabIndex={-1}>{lab ? 'Sensor Lab' : 'Cabin Simulation'}</h1><p>{lab ? 'Move virtual sensors and investigate missed local CO₂ excursions.' : 'Run a scenario, compare cabin and breathing-zone CO₂, then test your sensor layout.'}</p></div>
+      <div className="actions"><a className="button" href="#co2-timeline" onClick={event=>{event.preventDefault();chart.current?.scrollIntoView({behavior:'instant',block:'start'})}}>View graphs</a><button onClick={save}><ArrowDownToLine size={16}/> Save experiment</button></div>
     </div>
     {status && <p role="status" className="notice">{status}</p>}
     <div className="bench">
       <details className="panel controls" open={controlsOpen} onToggle={event=>setControlsOpen(event.currentTarget.open)}>
         <summary>Experiment controls</summary>
-        <div className="panel-title"><Crosshair size={16}/> Experiment controls</div>
+
         <div className="panel-pad">
           <label className="field">Scenario<select value={s.scenario in presets ? s.scenario : 'Custom'} onChange={e=>{const preset=e.target.value;if(preset==='Custom')set({scenario:'Custom'});else s.select(preset as keyof typeof presets)}}>{Object.keys(presets).map(name=><option key={name}>{name}</option>)}<option value="Custom">{s.scenario in presets || s.scenario==='Custom' ? 'Custom' : s.scenario}</option></select></label>
           <div className="subheading">MODEL PARAMETERS</div>
@@ -141,7 +141,8 @@ export function Workbench({lab = false}: {lab?: boolean}) {
             solver.solve(points=>{setCursor(null);set({points,running:false})})
           }}>{solver.pending ? 'Solving…' : 'Run 300 s'}</button><span className="mono end" title="Elapsed model time">{String(Math.floor(latest.t/60)).padStart(2,'0')}:{String(latest.t%60).padStart(2,'0')}</span></div>
         {solver.pending && <div className="solve-placeholder" role="status">Computing the 300-second run…</div>}
-        {solver.milliseconds != null && <p className="simulation-caption">Solved in {solver.milliseconds.toFixed(2)} ms</p>}
+
+        <p className="schematic-disclosure">AI-assisted cartoon illustration · Two-compartment schematic, not a helmet simulation.</p>
         <p className="simulation-caption">{hidden ? 'The cabin sensor is all you can see. Reveal the modeled breathing zone to compare.' : metrics.truth != null && metrics.alert == null ? 'The modeled breathing zone crossed the demo threshold. The current sensors have yet to alert.' : metrics.truth != null && metrics.alert != null ? `The modeled zone crossed at ${metrics.truth} s. A sensor first alerted at ${metrics.alert} s.` : 'The modeled breathing zone is below the demonstration threshold so far.'}</p>
       </section>
       <details className="panel readouts" open><summary>Telemetry</summary>
@@ -164,11 +165,11 @@ export function Workbench({lab = false}: {lab?: boolean}) {
                 : <li><strong>Info</strong> Run a longer comparison or try reduced ventilation to investigate when local CO₂ crosses the demo threshold.</li>}
             </ul>
           </section>
-          <ModelEvidence settings={s.settings}/>
+          <details className="model-details"><summary>Model assumptions &amp; evidence</summary><ModelEvidence settings={s.settings}/></details>
         </div>
       </details>
     </div>
-    <section ref={chart} className="panel timeline">
+    <section ref={chart} id="co2-timeline" className="panel timeline">
       <div className="panel-title"><Activity size={16}/> CO₂ timeline <span className="micro end">MODEL OUTPUT · PPM</span></div>
       <div className="panel-pad">
         <div className="legend"><span className="cyan">● Cabin</span>{!hidden && <span>● Breathing zone</span>}<span>Elapsed model time (s)</span></div>
@@ -186,7 +187,7 @@ export function Workbench({lab = false}: {lab?: boolean}) {
           <label className="field">Inspect sample · {point.t} s<input type="range" min={0} max={s.points.length-1} disabled={s.running || s.points.length<2} value={point.t} onChange={event=>setCursor(Number(event.target.value))}/></label>
           {cursor !== null && <button onClick={()=>setCursor(null)}>Return to latest</button>}
         </div>
-        <TelemetryChart cursor={point.t} data={chartData} series={[{key:'cabin',label:'Cabin'},...(!hidden?[{key:'local',label:'Breathing zone'}]:[]),...(compare && !hidden ? [{key:'baselineLocal',label:'Baseline breathing zone'}] : [])]} unit="ppm"/>
+        <TelemetryChart cursor={point.t} data={chartData} series={[{key:'cabin',label:'Cabin'},...(!hidden?[{key:'local',label:'Breathing zone'}]:[]),...(compare && !hidden ? [{key:'baselineLocal',label:'Baseline breathing zone'}] : [])]} unit="ppm" threshold={hidden ? undefined : threshold}/>
         {!hidden && <p>At {point.t} s, local CO₂ is {fmt(Math.abs(point.local-point.cabin))} ppm {point.local>=point.cabin ? 'above or equal to' : 'below'} the cabin reading. Ventilation mixes the two air volumes, while activity adds CO₂ near the astronaut.</p>}
         <span className="sr-only" role="status">{!s.running && !hidden ? `Paused at ${point.t} seconds. Local CO₂ ${fmt(point.local)} ppm.` : ''}</span>
       </div>

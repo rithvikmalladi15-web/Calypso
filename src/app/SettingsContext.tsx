@@ -11,7 +11,7 @@ const choices = {
 const defaults = () => ({
   music:false, volume:.35, mute:false, mood:'Auto', effects:false, effectsVolume:.35,
   animation:'Normal', reducedMotion:matchMedia('(prefers-reduced-motion: reduce)').matches,
-  grid:true, theme:'System', units:'Metric', quality:'Medium', dismissed:false, onboarding:false,
+  grid:true, theme:'Dark', units:'Metric', quality:'Medium', dismissed:false, onboarding:false,
 })
 type Preferences = ReturnType<typeof defaults>
 function restore(): Preferences {
