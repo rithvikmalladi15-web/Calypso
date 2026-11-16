@@ -16,3 +16,13 @@ Scrub to the first crossing and compare readings at that timestamp. Explain the 
 - Implemented in this pass: 01–12, 14, 16–19, 38, 50. Start computes the run instantly and the comparison saves as two named records. The scrubber and event overlays are in the guided demo.
 - Existing features used by the demo: 20, 23–24, 26–30, 32, 36–37, 41–43, 46, 49.
 - Deferred or partial: 13, 15, 21–22, 25, 31, 33–35, 39–40, 44–45, 47–48. These cover report page layout, fresh-session and accessibility checks, further telemetry detail, CSV download and regression tests, viewport selection and nudging, and design consistency. The browser checks covered the guided flow, named records, RR-1, and Reports. Screenshots were captured at desktop and 390 px.
+
+## Final submission checklist
+
+- Open the production URL in a signed-out window. Visit Overview, Simulation, Sensor Lab, NASA Data, Research, Experiments, Reports, and About.
+- Run the guided demo through both placements and its download. Start a worker solve, check the measured solve time, then scrub the viewport and both workbench charts.
+- Verify Play/Pause, step, reset, speed, and the parameter sliders. Paste the shared scenario into a fresh tab and compare settings.
+- Download result CSV, chart PNG, and cabin PNG. Open each file. Save two runs, reopen them in Experiments, and preview a report.
+- On a phone, test the controls sheet, settings drawer, reduced motion, and keyboard navigation. Enable sound after a click, try mute, switch tabs, and refresh to test persistence.
+- Run Lighthouse against the production URL. Record the actual scores and address findings.
+- Fill in the About team details and the methodology model revision date. Add documented empirical validation if available.

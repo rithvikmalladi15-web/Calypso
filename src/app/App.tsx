@@ -1,3 +1,4 @@
+import { AboutPage } from '../pages/AboutPage'
 import { WorkspaceClock } from '../components/WorkspaceClock'
 import { SimulationBoundary } from '../components/SimulationBoundary'
 import { WorkspaceSettings } from '../components/WorkspaceSettings'
@@ -20,7 +21,7 @@ import { routeHref, useRoute, type Route } from './router'
 
 const navigation: {label: string; pages: Route[]}[] = [
   {label:'Workbench', pages:['Overview','Simulation','Sensor Lab']},
-  {label:'Data sources', pages:['NASA Data','Research']},
+  {label:'Data sources', pages:['NASA Data','Research','About']},
   {label:'Analytics', pages:['Experiments','Reports']},
 ]
 
@@ -113,6 +114,7 @@ export function App() {
         {(route==='Simulation'||route==='Sensor Lab') && <SimulationBoundary>{route==='Simulation' && <GuidedDemo/>}<Workbench lab={route==='Sensor Lab'}/></SimulationBoundary>}
         {route==='NASA Data' && <NASADataPage/>}
         {route==='Research' && <ResearchPage/>}
+        {route==='About' && <AboutPage/>}
         {(route==='Experiments'||route==='Reports') && <ExperimentsPage report={route==='Reports'}/>}
         <footer>CALYPSO · Educational research prototype · Modeled outputs are for classroom investigation. · AI-assisted design and development.</footer>
       </main>

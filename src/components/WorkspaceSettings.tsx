@@ -1,4 +1,4 @@
-import { useRef } from 'react'
+import { useRef, useState } from 'react'
 import { Settings } from 'lucide-react'
 import { usePreferences } from '../app/SettingsContext'
 import { sources } from '../data/sourceRegistry'
@@ -7,6 +7,12 @@ import { version } from '../simulation/engine'
 
 export function WorkspaceSettings() {
   const context = usePreferences()
+  const [tourStep,setTourStep] = useState(0)
+  const tour = [
+    'Choose a scenario, then run or advance one second at a time.',
+    'Compare the cabin sensor and modeled breathing zone at the same sample.',
+    'Open Settings for ambient audio, display options, and a reduced-motion mode.',
+  ]
   const dialog = useRef<HTMLDialogElement>(null)
   const methodology = useRef<HTMLDialogElement>(null)
   if (!context) return null
@@ -38,7 +44,8 @@ export function WorkspaceSettings() {
       </div>
     </dialog>
     {!preferences.onboarding && location.hash.split('?')[0] === '#/simulation' && <aside className="workspace-help" aria-label="Simulation quick guide">
-      <p>Choose a scenario, then run or advance one second at a time. Enable ambient sound if you want music. Open Settings to adjust sound and visuals.</p>
+      <p aria-live="polite">{tour[tourStep]}</p>
+      {tourStep < tour.length - 1 && <button onClick={()=>setTourStep(tourStep+1)}>Next tip</button>}
       <button onClick={()=>update({onboarding:true})}>Don’t show again</button>
     </aside>}
     <button onClick={()=>methodology.current?.showModal()}>Data &amp; methodology</button>

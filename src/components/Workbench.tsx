@@ -140,6 +140,7 @@ export function Workbench({lab = false}: {lab?: boolean}) {
             set({running:false})
             solver.solve(points=>{setCursor(null);set({points,running:false})})
           }}>{solver.pending ? 'Solving…' : 'Run 300 s'}</button><span className="mono end" title="Elapsed model time">{String(Math.floor(latest.t/60)).padStart(2,'0')}:{String(latest.t%60).padStart(2,'0')}</span></div>
+        {solver.pending && <div className="solve-placeholder" role="status">Computing the 300-second run…</div>}
         {solver.milliseconds != null && <p className="simulation-caption">Solved in {solver.milliseconds.toFixed(2)} ms</p>}
         <p className="simulation-caption">{hidden ? 'The cabin sensor is all you can see. Reveal the modeled breathing zone to compare.' : metrics.truth != null && metrics.alert == null ? 'The modeled breathing zone crossed the demo threshold. The current sensors have yet to alert.' : metrics.truth != null && metrics.alert != null ? `The modeled zone crossed at ${metrics.truth} s. A sensor first alerted at ${metrics.alert} s.` : 'The modeled breathing zone is below the demonstration threshold so far.'}</p>
       </section>
