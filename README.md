@@ -97,11 +97,11 @@ The endpoint permits 10 requests/IP/minute and 60 total/minute **per server inst
 
 ## Tech stack
 
-React 19, TypeScript, Vite, Zustand, Recharts, Papa Parse, Web Workers, Vitest, Testing Library and a Vercel Node serverless endpoint. Hash routing preserves existing links.
+React 19, TypeScript, Vite, Zustand, Recharts, Three.js, Papa Parse, Web Workers, Vitest, Testing Library and a Vercel Node serverless endpoint. Hash routing preserves existing links.
 
 ## Tests
 
-Verified **2026-11-15: 43 tests passed across 10 files; production build passed**. Checks cover exchange-only conservation, source/removal mass balance, positivity, analytic steady state and convergence, zero-source behavior, the exact 36-second regression, averaging windows, sweep outcomes, saved references, CSV parsing, workbench controls and mocked Roger safeguards and Gemini-to-Mistral failover. Historical spatial-engine tests remain for unused legacy code; the active simulator is the two-volume engine.
+Verified **2026-11-15: 44 tests passed across 11 files; production build passed**. Checks cover exchange-only conservation, source/removal mass balance, positivity, analytic steady state and convergence, zero-source behavior, the exact 36-second regression, averaging windows, sweep outcomes, saved references, CSV parsing, workbench controls and mocked Roger safeguards and Gemini-to-Mistral failover. Historical spatial-engine tests remain for unused legacy code; the active simulator is the two-volume engine.
 
 Chrome checks on the production build cover run/pause/reset, tutorial Escape, mocked Roger replies, the masked exercise, local sensor placement, save/load, worker sweep and CSV download, NASA threshold selection and one-hour run, RR-1 comparison, and routes at desktop, 390 px and 360 px widths. No console errors or horizontal page overflow were observed in those checks. These checks do not establish scientific validation or guarantee behavior in every browser. Live provider output and distributed rate limiting were not verified.
 
@@ -118,3 +118,10 @@ NASA OSDR Environmental Data Application and the user-supplied RR-1 export; NASA
 ## AI-use disclosure
 
 Design, code, documentation and testing were developed with AI assistance. The visible cartoon is an AI-assisted code illustration and is labeled in the app. The optional Roger assistant generates text via Gemini with optional Mistral backup and displays an accuracy notice. An earlier generated crew asset remains attributed separately; it is not the active diagram. Original ambient audio was synthesized with AI assistance. Model trajectories and sweep values come from deterministic equations; RR-1 observations come from the supplied CSV, not generated data. Human review and scientific validation remain necessary.
+
+
+## Interactive 3D views
+
+Simulation and Sensor Lab offer a rotatable, zoomable conceptual cabin and crew figure. Crew Health provides a selectable 3D body illustration. Drag or pinch on touchscreens, use the view buttons, or focus the canvas and use left/right arrows, +/−, and Home. Blue sensor markers can be selected; Sensor Lab provides Cabin/Breathing zone placement presets. Body-system buttons remain keyboard accessible.
+
+The same two-volume equations, zone boundary, run clock and masked exercise drive the 3D cabin. No spatial airflow or physiological simulation was added. The body is a simplified research illustration, not anatomical validation. The optional 2D views remain available, with automatic fallback when WebGL is unsupported or its context is lost. 3D resources load separately and render only on interaction or model updates; there is no automatic spin. Both scenes and exported PNGs carry “Made by AI” labels. Three.js is free/open-source; no paid assets or rendering service is used.

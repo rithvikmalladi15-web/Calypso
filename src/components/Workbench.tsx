@@ -8,7 +8,8 @@ import { download, downloadChart } from '../lib/chartDownloads'
 import { readScenario, scenarioUrl } from '../simulation/scenarioLink'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Activity, ArrowDownToLine, AudioLines, Crosshair, Eye, EyeOff, Layers3, Pause, Play, RotateCcw } from 'lucide-react'
-import { CabinDiagram, zoneName } from './CabinDiagram'
+import { zoneName } from './CabinDiagram'
+import { CabinView } from './CabinView'
 import { TelemetryChart } from './TelemetryChart'
 import { initial, presets, run, type Settings } from '../simulation/engine'
 import { cabinSensor, detect, isLocal, localSensor, reading } from '../simulation/sensorModel'
@@ -89,6 +90,7 @@ export function Workbench({lab = false}: {lab?: boolean}) {
     download(new Blob([[headings,...rows.map(row=>row.join(','))].join('\n')],{type:'text/csv'}),'calypso-co2.csv')
   }
   async function exportPng(kind:'chart'|'cabin') {
+    if(kind==='cabin' && viewport.current?.querySelector('.scene-canvas canvas')){viewport.current.querySelector<HTMLButtonElement>('[data-export-3d]')?.click();return}
     const svg = kind === 'cabin' ? viewport.current?.querySelector('svg.cabin') : chart.current?.querySelector('svg.recharts-surface')
     if (!(svg instanceof SVGSVGElement)) { setStatus('Chart is unavailable.'); return }
     try { await downloadChart(svg,kind === 'cabin' ? 'calypso-cabin.png' : undefined) } catch { setStatus('Could not export the chart as PNG.') }
@@ -212,7 +214,7 @@ export function Workbench({lab = false}: {lab?: boolean}) {
         <span className="sr-only" role="status">{!s.running && !hidden ? `Paused at ${point.t} seconds. Local CO₂ ${fmt(point.local)} ppm.` : ''}</span>
       </div>
     </section>
-        <CabinDiagram point={point} sensors={s.sensors} airflow={false} heat={heat} coverage={coverage} hidden={masked} playing={s.running} ventilation={s.settings.ventilation} onMove={lab && !hidden ? move : undefined}/>
+        <CabinView noise={s.noise} point={point} sensors={s.sensors} airflow={false} heat={heat} coverage={coverage} hidden={masked} playing={s.running} ventilation={s.settings.ventilation} onMove={lab && !hidden ? move : undefined}/>
         {solver.pending && <div className="solve-placeholder" role="status">Computing the run…</div>}
 
         <p className="schematic-disclosure">Conceptual schematic, not a spatial simulation.</p>

@@ -8,3 +8,5 @@
 - Interface icons: Lucide library assets, not generated images.
 
 Charts render deterministic model output or the supplied NASA CSV. They are not labeled as AI-generated measurements. Design and implementation used AI assistance. All active illustration captions use transparent backgrounds and remain readable against the dark surfaces.
+
+- Interactive 3D cabin, crew and body: original AI-assisted procedural geometry in `src/components/ScientificScene.tsx`, rendered with Three.js. On-screen attribution and exported PNG watermarks read “Made by AI”. No third-party model assets were downloaded. These are conceptual illustrations, not geometry-resolved model outputs.

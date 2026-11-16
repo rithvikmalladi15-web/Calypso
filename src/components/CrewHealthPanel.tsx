@@ -1,4 +1,5 @@
-import { useState } from 'react'
+import { lazy, Suspense, useState } from 'react'
+const ScientificScene=lazy(()=>import('./ScientificScene'))
 import { useSim } from '../stores/simulationStore'
 import { thresholds } from '../simulation/thresholds'
 
@@ -21,6 +22,8 @@ const phases = [
 ]
 
 export function CrewHealthPanel() {
+  const [three,setThree]=useState(()=>typeof WebGL2RenderingContext!=='undefined')
+  const [unavailable,setUnavailable]=useState(false)
   const [selected,setSelected] = useState(2)
   const [phase,setPhase] = useState(0)
   const system = systems[selected]
@@ -37,6 +40,9 @@ export function CrewHealthPanel() {
     <div className="crew-workbench">
       <section className="crew-view" aria-label="Interactive crew anatomy">
         <div className="crew-view-title">Crew anatomy <span>Illustrative body map</span></div>
+        <div className="scene-mode" role="group" aria-label="Body illustration mode"><button aria-pressed={three} onClick={()=>setThree(true)}>3D body</button><button aria-pressed={!three} onClick={()=>setThree(false)}>2D body map</button></div>
+        {unavailable&&<p className="scene-help" role="status">3D is unavailable on this device. Use the body map and system buttons below.</p>}
+        {three?<Suspense fallback={<p className="scene-help">Loading interactive body…</p>}><ScientificScene kind="body" selectedSystem={selected} onSystem={setSelected} onUnavailable={()=>{setThree(false);setUnavailable(true)}}/></Suspense>:<>
         <svg viewBox="0 0 300 420" role="img" aria-label="Human body schematic with selectable research regions">
           <defs>
             <pattern id="crew-grid" width="15" height="15" patternUnits="userSpaceOnUse"><path d="M15 0H0V15" fill="none" stroke="#224451" strokeWidth=".5"/></pattern>
@@ -63,7 +69,7 @@ export function CrewHealthPanel() {
             <text x={item.side===1?290:10} y={item.labelY-6} textAnchor={item.side===1?'end':'start'}>{item.name}</text>
           </g>)}
         </svg>
-        <span className="ai-image-credit">Made by AI · Illustrative body map</span>
+        <span className="ai-image-credit">Made by AI · Illustrative body map</span></>}
         <div className="crew-system-buttons" role="group" aria-label="Body systems">
           {systems.map((item,index)=><button key={item.name} aria-pressed={selected===index} onClick={()=>setSelected(index)}>{item.name}</button>)}
         </div>
