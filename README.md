@@ -35,3 +35,7 @@ Run `npm run test` for the regression suite and `npm run build` for the producti
 Vercel builds with `npm run build` and serves `dist`. To enable Roger, set `GEMINI_API_KEY` as a server-side environment variable. `GEMINI_MODEL` optionally overrides the default Gemini model. On requests to Roger, the app sends the question, recent chat, and a bounded run summary to Gemini. Masked breathing-zone values are withheld.
 
 See [data credits](public/data/README.md), [illustration credits](public/images/ATTRIBUTION.md), and [audio credits](public/audio/ATTRIBUTION.txt). Design and development used AI assistance.
+
+## Test status
+
+Verified 2026-11-15: **34 tests passed in 9 files**; production build passed. Coverage includes weighted mass balance, analytic steady state and convergence, zero-source behavior, the 36-second regression, threshold averaging, sweep outcomes, saved-reference compatibility, CSV parsing, UI controls and mocked Roger server safeguards. These software checks are not experimental validation.

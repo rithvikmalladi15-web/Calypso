@@ -26,3 +26,25 @@ describe('compartment balance', () => {
     expect(step(initial,settings,300)).toEqual(run(settings)[300])
   })
 })
+
+it('preserves the analytic steady state and converges to it',()=>{
+ const settings=presets.Baseline
+ const source=22*settings.activity, removal=.15*settings.scrubber, exchange=.006+.074*settings.ventilation
+ const cabin=source/removal,local=cabin+source/exchange
+ const equilibrium={t:0,cabin,local}
+ expect(step(equilibrium,settings,3600).cabin).toBeCloseTo(cabin,9)
+ expect(step(equilibrium,settings,3600).local).toBeCloseTo(local,9)
+ let point=initial
+ for(let i=0;i<10;i++)point=step(point,settings,3600)
+ expect(point.cabin).toBeCloseTo(cabin,6)
+ expect(point.local).toBeCloseTo(local,6)
+})
+it('has no spontaneous CO2 in the zero-source zero-initial case',()=>{
+ for(const ventilation of [0,.5,1])for(const scrubber of [0,.5,1]) {
+  expect(step({t:0,cabin:0,local:0},{ventilation,scrubber,activity:0},3600)).toEqual({t:3600,cabin:0,local:0})
+ }
+})
+it('removes total CO2 monotonically when source is zero',()=>{
+ const points=run({...presets.Baseline,activity:0},3600)
+ for(let i=1;i<points.length;i++)expect(30*points[i].cabin+points[i].local).toBeLessThanOrEqual(30*points[i-1].cabin+points[i-1].local)
+})

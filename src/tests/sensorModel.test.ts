@@ -20,3 +20,12 @@ it('distinguishes a missed crossing, true crossing, and false alert',()=>{
   // S1's phase is negative at zero seconds. Use a phase with positive noise.
   expect(detect([{t:1,cabin:1249,local:1249}],[localSensor],50).alert).toBe(1)
 })
+it('reproduces the headline 36-second result without a cabin detection in 300 s',()=>{
+ const points=run(presets['Reduced ventilation'],300)
+ expect(points[35].local).toBeLessThan(1250)
+ expect(points[36].local).toBeGreaterThanOrEqual(1250)
+ expect(detect(points,[cabinSensor]).truth).toBe(36)
+ expect(detect(points,[cabinSensor]).alert).toBeUndefined()
+ expect(detect(points,[localSensor]).alert).toBe(36)
+ expect(detect(points,[localSensor]).delay).toBe(0)
+})

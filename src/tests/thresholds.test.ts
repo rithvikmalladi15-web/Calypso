@@ -11,3 +11,10 @@ it('weights irregular timestamps and interpolates a rolling window boundary',()=
  const points=[0,2,5,8].map(t=>({t,cabin:0,local:0}))
  expect(averaged(points,[0,2,5,8],4)).toEqual([undefined,undefined,3,6])
 })
+it('saves the selected reference and remains compatible with demo defaults',async()=>{
+ const {snapshot}=await import('../stores/experimentStore')
+ const {run,presets}=await import('../simulation/engine')
+ const points=run(presets['Reduced ventilation'])
+ expect(snapshot('test',presets['Reduced ventilation'],[cabinSensor],points,0,'nasa').metrics.truth).toBeUndefined()
+ expect(snapshot('test',presets['Reduced ventilation'],[cabinSensor],points,0).metrics.truth).toBe(36)
+})
