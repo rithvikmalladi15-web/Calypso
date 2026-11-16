@@ -19,8 +19,8 @@ import { routeHref, useRoute, type Route } from './router'
 
 const navigation: {label: string; pages: Route[]}[] = [
   {label:'Workbench', pages:['Simulation','Sensor Lab']},
-  {label:'Data sources', pages:['NASA Data','Research']},
-  {label:'Analytics', pages:['Experiments','Reports']},
+  {label:'Data sources', pages:['Research']},
+  {label:'Analytics', pages:['Reports']},
 ]
 
 function Overview() {
@@ -41,9 +41,9 @@ function Overview() {
         <p>Run a short experiment to see what changes when you move one CO₂ sensor from the cabin to the astronaut’s breathing zone.</p>
         <div className="overview-hero-actions">
           <a className="button primary" href={routeHref('Simulation')}>Launch workbench</a>
-          <a className="button" href={routeHref('Research')}>Review NASA sources</a>
+          <a className="button" href={routeHref('Research')}>See sources and methods</a>
         </div>
-        <p className="overview-evidence">The evidence directory links to the NASA sources and explains how CALYPSO uses them.</p>
+        <p className="overview-evidence">The Research page lists the NASA sources, what each was used for, and which assumptions belong to the simulation.</p>
       </div>
       <FieldWorkbench compact/>
     </section>
@@ -100,7 +100,7 @@ export function App() {
         <nav aria-label="Workspace">
           {navigation.map(group => <div className="nav-group" key={group.label}>
             <span className="nav-group-label">{group.label}</span>
-            {group.pages.map(page => <a key={page} href={routeHref(page)} aria-current={page === route ? 'page' : undefined}>{page==='Research' ? 'Evidence' : page}</a>)}
+            {group.pages.map(page => <a key={page} href={routeHref(page)} aria-current={page === route ? 'page' : undefined}>{page==='Research' ? 'Research & Methods' : page}</a>)}
           </div>)}
         </nav>
       </aside>

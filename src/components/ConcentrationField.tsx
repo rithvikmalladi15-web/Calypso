@@ -1,7 +1,7 @@
 import { useEffect, useRef, type RefObject } from 'react'
 import { columns, rows, crew, cellIndex, valueAt, initialPpm, type Cell } from '../simulation/fieldModel'
 
-const palette = [[10,16,24],[24,46,66],[46,83,112],[102,155,182],[226,182,109]]
+const palette = [[68,1,84],[59,82,139],[33,145,140],[94,201,98],[253,231,37]]
 const cellSize = 20
 export function fieldColor(fraction:number) {
   const scaled = Math.max(0,Math.min(1,fraction))*(palette.length-1)
@@ -26,10 +26,7 @@ export function ConcentrationField({frame, positions, recommendation, detection,
         : fieldColor((frame[index]-initialPpm)/(upperPpm-initialPpm))
       ctx.fillRect(x*cellSize,y*cellSize,cellSize,cellSize)
     }
-    ctx.strokeStyle='#ffffff0b';ctx.lineWidth=.5
-    for(let x=20;x<640;x+=20){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,360);ctx.stroke()}
-    for(let y=20;y<360;y+=20){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(640,y);ctx.stroke()}
-    ctx.strokeStyle='#8194a8'
+    ctx.strokeStyle='#e4edf4'
     ctx.lineWidth=1.5
     ctx.strokeRect(1,1,638,358)
     ctx.strokeRect(584,112,55,137)
@@ -51,16 +48,7 @@ export function ConcentrationField({frame, positions, recommendation, detection,
       ctx.beginPath();ctx.arc(x,y,10,0,Math.PI*2);ctx.fill();ctx.stroke()
       ctx.fillStyle='#fff';ctx.fillText(label,x>525 ? x-104 : x+14,y+5)
     }
-    // The exposed face stays centered on the source/sampling cell.
-    const cx=(crew.x+.5)*cellSize,cy=(crew.y+.5)*cellSize
-    ctx.strokeStyle='#dbe4ed';ctx.fillStyle='#253547';ctx.lineWidth=2
-    ctx.beginPath();ctx.roundRect(cx-12,cy+14,24,40,7);ctx.fill();ctx.stroke()
-    ctx.beginPath();ctx.moveTo(cx-12,cy+22);ctx.lineTo(cx-22,cy+43);ctx.moveTo(cx+12,cy+22);ctx.lineTo(cx+23,cy+38)
-    ctx.moveTo(cx-6,cy+54);ctx.lineTo(cx-9,cy+75);ctx.moveTo(cx+6,cy+54);ctx.lineTo(cx+12,cy+73);ctx.stroke()
-    ctx.fillStyle='#d0b8a0';ctx.beginPath();ctx.ellipse(cx,cy-2,9,12,0,0,Math.PI*2);ctx.fill()
-    ctx.strokeStyle='#abc8dc';ctx.setLineDash([3,4]);ctx.beginPath();ctx.arc(cx,cy,21,0,Math.PI*2);ctx.stroke();ctx.setLineDash([])
-    ctx.beginPath();ctx.moveTo(cx+18,cy-14);ctx.lineTo(cx+43,cy-42);ctx.lineTo(cx+145,cy-42);ctx.stroke()
-    ctx.fillStyle='#edf3f8';ctx.fillText('Crew source',cx+46,cy-49)
+    mark(crew,'Crew','#fff')
     if (recommendation) mark(recommendation,'','#ffdf77')
     positions.forEach((position,index)=>mark(position,'S'+(index+1),'#8eedff'))
     for(let i=0;i<240;i++) {
@@ -71,7 +59,7 @@ export function ConcentrationField({frame, positions, recommendation, detection,
     ctx.font='13px system-ui'
     ctx.fillText(detection ? '120 s' : initialPpm+' ppm',16,397)
     ctx.fillText(detection ? '0 s' : upperPpm+' ppm',205,397)
-    ctx.fillText(detection ? 'First crossing · dark = none' : 'Modeled CO₂ (ppm)',292,382)
+    ctx.fillText(detection ? 'First alert · dark = no alert' : 'Modeled CO₂ · scale clips below '+initialPpm+' ppm',275,382)
   },[canvas,frame,positions,recommendation,detection,upperPpm])
   return <canvas ref={canvas} className="concentration-field" width={640} height={406}
     role="img" aria-label={`Modeled CO₂ field. Breathing zone ${Math.round(valueAt(frame,crew))} ppm. Sensor coordinates are available below.`}

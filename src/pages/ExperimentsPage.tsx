@@ -22,7 +22,7 @@ export function ExperimentsPage({report = false}: {report?:boolean}) {
   }
   function load(record: Experiment, replay: boolean) {
     useSim.setState({scenario:record.scenario,settings:record.settings,sensors:record.sensors,noise:record.noise,points:replay ? run(record.settings,record.points.length-1) : record.points,running:false})
-    location.hash=routeHref('Sensor Lab')
+    location.hash=routeHref('Simulation')
   }
   function log(e: FormEvent) {
     e.preventDefault()
@@ -31,7 +31,7 @@ export function ExperimentsPage({report = false}: {report?:boolean}) {
   return <>
     <div className="page-heading"><h1>{report?'Reports':'Experiments'}</h1><p>{report?'Review a saved run and export its settings, methods, and results.':'Reopen a saved run or compare two runs side by side.'}</p></div>
     {error && <p className="notice" role="alert">{error}</p>}
-    {!current ? <section className="panel section"><h2>No experiments saved</h2><p>Run a scenario in Sensor Lab, then save it to compare results here.</p><a className="button" href={routeHref('Sensor Lab')}>Open Sensor Lab</a></section> : <>
+    {!current ? <section className="panel section"><h2>No experiments saved</h2><p>Run a scenario and save it from the simulation workbench.</p><a className="button" href={routeHref('Simulation')}>Open simulation</a></section> : <>
       <section className="panel section no-print">
         <div className="section-title"><h2>Saved runs</h2><span className="micro">{records.length} / 10 LOCAL RECORDS</span></div>
         <div className="actions">
