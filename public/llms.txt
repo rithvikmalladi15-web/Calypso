@@ -17,7 +17,7 @@ CALYPSO models two air volumes: mixed cabin air and the air near an astronaut’
 
 The model uses two effective volumes with an illustrative local CO₂ source, symmetric exchange, and cabin removal. The 1,250 ppm threshold is an experiment rule. NASA Data displays measured RR-1 CO₂, temperature, and relative humidity for ISS flight and ground control separately from model results.
 
-Crew Health provides a NASA-linked body map. Roger is an optional Gemini-powered guide to the model and NASA reference directory.
+Crew Health is an optional NASA-linked body map under Extras; Crew Nutrition has been removed. Roger is an optional Gemini-powered guide to the model and NASA reference directory.
 
 ## Links
 
@@ -27,3 +27,7 @@ Crew Health provides a NASA-linked body map. Roger is an optional Gemini-powered
 - [Bundled RR-1 CSV](https://calypso-tan.vercel.app/data/nasa-iss-telemetry.csv)
 - [NASA Environmental Data Application](https://visualization.osdr.nasa.gov/eda/)
 - [NASA Carbon Dioxide Technical Brief](https://www.nasa.gov/ochmo-tb-004-carbon-dioxide-2/)
+
+## Model transparency
+
+The active model is a two-volume mass balance, not spatial airflow. A worker sweep covers 36 ventilation/activity settings under a fixed demo rule and exports its grid. NASA Data compares model cabin ranges with RR-1 context but does not calibrate or validate the model. An optional NASA reference requires a complete one-hour average and explicitly assumes 760 mmHg total pressure for conversion. Unverified mission limits are TODO. Roger is server-side, restricted by instructions to model/reference explanations, and marked AI-generated, may be inaccurate.

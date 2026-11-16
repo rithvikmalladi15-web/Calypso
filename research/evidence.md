@@ -11,7 +11,7 @@ Vc dCc/dt = Q(Cb − Cc) − R Cc
 
 S = 22 × relative activity in ppm·m³/s. Q = 0.006 + 0.074 × ventilation in m³/s. R = 0.15 × removal setting in m³/s. Ventilation and removal are dimensionless fractions between zero and one. The source multiplier ranges from zero to three. The initial state is 650 ppm in each compartment. These demonstration values were chosen to make local and cabin behavior distinguishable on short runs. They have no calibration to RR-1 or an astronaut.
 
-The engine integrates with forward Euler and substeps of at most one second. Under the supported controls this leaves positive diagonal update weights and nonnegative exchange weights. Summing the two volume-weighted equations cancels exchange exactly in the mathematical model, leaving S − R Cc. Tests exercise exchange-only conservation, source and removal accounting, positivity, and long-step subdivision. The schematic shows a discrete breathing-zone ellipse and qualitatively animated flow lines.
+The engine integrates with forward Euler and substeps of at most one second. Under the supported controls this leaves positive diagonal update weights and nonnegative exchange weights. Summing the two volume-weighted equations cancels exchange exactly in the mathematical model, leaving S − R Cc. Tests exercise exchange-only conservation, source and removal accounting, positivity, and long-step subdivision. The schematic shows a discrete breathing-zone ellipse only; it is conceptual, not a spatial simulation. No airflow field is calculated.
 
 ## Virtual measurements
 
@@ -26,14 +26,10 @@ A local crossing is the first simulated sample at or above 1,250 ppm. A sensor a
 - **Spacesuit standard and guidance.** Volume 2 §11.3.5 [V2 11039] addresses inspired CO₂ partial pressure in suits. NASA's February 2025 companion bulletin, p. 1, discusses ventilation, helmet shape, metabolic rate, and standardized testing. [Spacesuits](https://www.nasa.gov/reference/11-0-spacesuits-vol-2/) · [Suited CO₂ bulletin](https://www.nasa.gov/wp-content/uploads/2025/02/suited-co2-technical-bulletin-02182025.pdf)
 - **Observed data.** NASA OSDR publishes flight and ground telemetry and describes its data tables and comparison workflow. RR-1 observations provide environmental context. [Environmental Data App](https://visualization.osdr.nasa.gov/eda/) · [Download tutorial](https://github.com/nasa/OSDR_Tutorials/blob/main/source/pages/guides/environmental_data_application.md)
 
-## Spatial workbench model
+## NASA reference assessment and robustness
 
-The Simulation route uses a separate educational spatial model. The original guided comparison and its saved experiments use the two-compartment model above.
+The optional NASA cabin reference uses 3 mmHg averaged over one hour, converted to ppm at the explicitly assumed 760 mmHg total pressure. Complete 3,600-second windows are required; trapezoidal integration interpolates the leading window boundary. Short runs are not classified as below the NASA limit. The raw reference line is not an instantaneous exposure limit. Off-nominal mission limits remain TODO until verified.
 
-The cabin section contains 32 × 18 cells in grid coordinates. With time in seconds and concentration C in ppm, the model solves ∂C/∂t = −∇·(uC) + D∇²C + S − k max(C − Cfloor, 0). A discrete streamfunction supplies recirculating face velocities with zero wall-normal flux. The finite-volume update uses upwind advection and centered diffusion with a 0.5-second step. D is 0.055 cells²/s. The illustrative crew source is 210 ppm/s at 1× activity in one cell. The sink acts in the three rightmost columns with a rate of 0.022/s at full removal and a 420 ppm model floor.
+Robustness uses the demo rule, a 6 × 6 ventilation/activity grid, 65% removal, zero noise, 650 ppm initial concentrations and 300 seconds. CSV exports include every grid setting and distinct no-crossing and never-detected outcomes. This is a deterministic sensitivity analysis, not flight validation.
 
-The model starts uniformly at 2,641 ppm, the first ISS CO₂ measurement in the bundled RR-1 table (2014-09-20 03:59 GMT). That single environmental observation supplies an initial condition. The airflow, crew source, sink and geometry are illustrative assumptions. The solver has no calibrated ISS flow field. [NASA OSDR Environmental Data Application](https://visualization.osdr.nasa.gov/eda/)
-
-The placement map shows each cell’s first sampled crossing of the **3,100 ppm demonstration trigger**. It recommends the earliest eligible cell, excluding the crew source cell, with ties resolved in grid order. Real installation constraints and detector response times are outside the model.
-
-**NASA context.** NASA-STD-3001 Volume 2 §6.2.1.3 [V2 6004] states a 3 mmHg one-hour average habitable-volume requirement. The optional plot line is its concentration equivalent at an assumed 760 mmHg total pressure (approximately 3,947 ppm). The 120-second simulation cannot assess that one-hour criterion. [NASA standard](https://www.nasa.gov/reference/6-0-natural-and-induced-environments-vol-2/) · [ISS CO₂ operations study](https://ntrs.nasa.gov/citations/20150019624)
+Unused legacy spatial-engine code is not connected to the active Simulation route. Both Simulation and Sensor Lab use the two-volume engine described above.
