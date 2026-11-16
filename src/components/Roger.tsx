@@ -43,7 +43,7 @@ export function Roger() {
     const timeout=window.setTimeout(()=>controller.abort(),30000)
     try{
       const response=await fetch('/api/roger',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({question,context,history}),signal:controller.signal})
-      const data=await response.json()
+      const data=await response.json().catch(()=>{throw new Error('Roger’s server is restarting or unavailable. Please try again shortly.')})
       if(!response.ok)throw new Error(data.error||'Roger is unavailable. Please try again.')
       if(typeof data.answer!=='string')throw new Error('Roger received an incomplete answer. Please try again.')
       if(request.current!==controller||controller.signal.aborted)return

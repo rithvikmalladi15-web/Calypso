@@ -1,4 +1,4 @@
-import { sources } from '../src/data/sourceRegistry'
+import { sources } from '../src/data/sourceRegistry.js'
 
 export type RunContext = {
   scenario:string; elapsedSeconds:number; cabinPpm:number; localPpm?:number;

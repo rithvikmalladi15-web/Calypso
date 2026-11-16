@@ -1,4 +1,4 @@
-import { askGemini, parseInput } from '../server/roger'
+import { askGemini, parseInput } from '../server/roger.js'
 import type { IncomingMessage, ServerResponse } from 'node:http'
 const buckets=new Map<string,{count:number;until:number}>()
 let total={count:0,until:0}
