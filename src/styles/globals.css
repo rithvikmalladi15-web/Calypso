@@ -304,3 +304,8 @@ main[data-page=sensor-lab] .workstation-heading{padding-bottom:16px;border-botto
 .timeline-inspect{gap:var(--workspace-space-sm)}
 .workspace-status{gap:var(--workspace-space-md)}
 .model-status::before{background:var(--status-positive)}
+.evidence-panel{grid-column:1/-1;margin-top:14px;padding-top:12px;border-top:1px solid var(--line);min-width:0}
+.evidence-panel h3{margin:0}
+.evidence-range{display:grid;grid-template-columns:1fr auto;gap:2px 8px;margin-block:8px;font-size:12px}
+.evidence-range meter{width:100%}
+.evidence-range small{color:var(--muted)}

@@ -1,3 +1,4 @@
+import { ModelEvidence } from './ModelEvidence'
 import { useScenarioSolver } from '../simulation/useScenarioSolver'
 import { download, downloadChart } from '../lib/chartDownloads'
 import { readScenario, scenarioUrl } from '../simulation/scenarioLink'
@@ -151,6 +152,7 @@ export function Workbench({lab = false}: {lab?: boolean}) {
           <div className="subheading">VIRTUAL SENSORS</div>
           {s.sensors.map(sensor=><div className="sensor-read" key={sensor.id}><span>{sensor.id} · {hidden ? 'Virtual' : zoneName(sensor)}</span><b>{fmt(reading(point,sensor,s.noise))} ppm</b></div>)}
           {!hidden && metrics.truth != null && metrics.alert == null && <div className="notice">Local crossing missed by sensors</div>}
+          <ModelEvidence settings={s.settings}/>
         </div>
       </details>
     </div>
